@@ -1,15 +1,14 @@
-/* Nurse Yossr — réception des push Firebase quand l'app est fermée.
-   Remplace la config ci-dessous par LA MÊME que dans index.html. */
+/* Nurse Yossr — réception des push Firebase quand l'app est fermée. */
 importScripts("https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js");
 importScripts("https://www.gstatic.com/firebasejs/10.12.5/firebase-messaging-compat.js");
 
 firebase.initializeApp({
-  apiKey:            "COLLE_TON_API_KEY",
-  authDomain:        "COLLE_TON_PROJET.firebaseapp.com",
-  projectId:         "COLLE_TON_PROJECT_ID",
-  storageBucket:     "COLLE_TON_PROJET.appspot.com",
-  messagingSenderId: "COLLE_TON_SENDER_ID",
-  appId:             "COLLE_TON_APP_ID"
+  apiKey:            "AIzaSyBxHBJNexCeZ40HSqOLsC5Xr0K3sFrE314",
+  authDomain:        "nurse-yossr.firebaseapp.com",
+  projectId:         "nurse-yossr",
+  storageBucket:     "nurse-yossr.firebasestorage.app",
+  messagingSenderId: "728514643834",
+  appId:             "1:728514643834:web:ebb56805aa449de2bc78c3"
 });
 
 const messaging = firebase.messaging();
