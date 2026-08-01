@@ -150,6 +150,7 @@ label.f{display:block;margin:12px 0 6px;font-size:12.5px;font-weight:600;color:v
 .in{width:100%;padding:14px;border-radius:var(--r-sm);border:1px solid var(--border);
   background:var(--bg);color:var(--text);outline:none;transition:border-color .2s}
 .in:focus{border-color:var(--accent)}
+.in.ro{background:var(--accent-soft);color:var(--head);font-weight:600;border-style:dashed;cursor:default}
 textarea.in{min-height:88px;resize:vertical;font-family:inherit}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 
@@ -203,6 +204,8 @@ svg.chart text{font-size:9px;fill:var(--mute);font-family:"Instrument Sans"}
   display:grid;place-items:center;font-size:16px;position:relative;transition:transform .16s}
 .ic:active{transform:scale(.92)}
 .ic.ring{animation:ring 1.1s ease-in-out}
+.ic.out{color:var(--accent)}
+.ic.out svg{display:block}
 @keyframes ring{0%,100%{transform:rotate(0)}20%{transform:rotate(-13deg)}40%{transform:rotate(11deg)}
   60%{transform:rotate(-7deg)}80%{transform:rotate(5deg)}}
 #bell-badge{position:absolute;top:-5px;right:-5px;min-width:19px;height:19px;border-radius:10px;
@@ -377,7 +380,12 @@ a{color:var(--accent)}
       <div class="hd-txt"><b>Nurse Yossr</b><span id="hd-hello">Bonjour</span></div>
       <div class="hd-act">
         <button class="ic" id="btn-bell" aria-label="Rappels du jour">🔔<i id="bell-badge">0</i></button>
-        <button class="ic" id="btn-out" aria-label="Se déconnecter">⏻</button>
+        <button class="ic out" id="btn-out" aria-label="Se déconnecter" title="Se déconnecter">
+          <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor"
+               stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 21H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3"/>
+            <polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+          </svg></button>
       </div>
     </div>
     <div id="tabs"></div>
@@ -490,18 +498,6 @@ a{color:var(--accent)}
   </section>
 
   <!-- STATS -->
-  <section class="page" id="p-stats">
-    <div class="topbar"><div><h1>Cette semaine</h1><div class="date" id="st-range">—</div></div></div>
-    <div class="grid2">
-      <div class="card"><div class="eyebrow">Eau</div><div class="big" id="st-water">0%</div><div class="bar"><i id="st-water-b"></i></div></div>
-      <div class="card"><div class="eyebrow">Repas</div><div class="big" id="st-meals">0%</div><div class="bar"><i id="st-meals-b"></i></div></div>
-      <div class="card"><div class="eyebrow">Sommeil</div><div class="big" id="st-sleep">—</div><div class="sub">moyenne / nuit</div></div>
-      <div class="card"><div class="eyebrow">Énergie</div><div class="big" id="st-energy">—</div><div class="sub">moyenne / 10</div></div>
-    </div>
-    <div class="card"><h2>Régularité sur 14 jours</h2><svg class="chart" id="st-chart"></svg></div>
-    <div class="card"><h2>Ce que ça dit</h2><div class="sub" id="st-insight" style="line-height:1.7;margin-top:6px">—</div></div>
-  </section>
-
   <!-- RELAX -->
   <section class="page" id="p-relax">
     <div class="topbar"><div><h1>Détente</h1><div class="date">5 minutes suffisent</div></div>
@@ -541,10 +537,23 @@ a{color:var(--accent)}
   </section>
 
   <!-- SCHEDULE -->
-  <section class="page" id="p-sched">
-    <div class="topbar"><div><h1>Horaires</h1><div class="date">Les rappels s'adaptent tout seuls</div></div></div>
+  <!-- TOOLS -->
+  <!-- SETTINGS -->
+  <section class="page" id="p-set">
+    <div class="topbar"><div><h1>Réglages</h1><div class="date" id="set-account">—</div></div></div>
     <div class="card">
-      <h2>Semaine type</h2>
+      <h2>Profil</h2>
+      <label class="f">Prénom</label><input class="in" id="s-name">
+      <div class="two"><div><label class="f">Poids (kg)</label><input class="in" type="number" id="s-weight" inputmode="decimal"></div>
+        <div><label class="f">Objectif eau</label><input class="in ro" id="s-goal" readonly tabindex="-1"></div></div>
+      <div class="sub" style="margin-top:-2px">Calculé automatiquement : 35 ml par kilo.</div>
+      <div class="two"><div><label class="f">Réveil</label><input class="in" type="time" id="s-wake"></div>
+        <div><label class="f">Coucher</label><input class="in" type="time" id="s-bed"></div></div>
+      <button class="btn solid wide" id="s-save">Enregistrer</button>
+    </div>
+    <div class="card">
+      <h2>Horaires de travail</h2>
+      <div class="sub" style="margin-bottom:10px">Les rappels s'adaptent tout seuls.</div>
       <div class="pillrow" style="margin-bottom:6px">
         <button class="pill" id="preset-fixe">Lundi → Samedi · 08h-14h</button>
         <button class="pill" id="preset-clear">Tout mettre en repos</button>
@@ -571,57 +580,18 @@ a{color:var(--accent)}
       <button class="btn solid wide" id="g-add">Ajouter la garde</button>
       <div id="g-list" style="margin-top:12px"></div>
     </div>
-  </section>
 
-  <!-- TOOLS -->
-  <section class="page" id="p-tools">
-    <div class="topbar"><div><h1>Outils</h1><div class="date">Vérifie toujours avec le protocole du service</div></div></div>
-    <div class="card">
-      <h2>Débit de perfusion</h2>
-      <div class="two">
-        <div><label class="f">Volume (ml)</label><input class="in" type="number" id="t-vol" value="500" inputmode="numeric"></div>
-        <div><label class="f">Durée (h)</label><input class="in" type="number" id="t-dur" value="4" step="0.25" inputmode="decimal"></div>
-      </div>
-      <label class="f">Gouttes par ml</label>
-      <div class="pillrow" id="t-drops"><button class="pill on" data-d="20">20 (macro)</button><button class="pill" data-d="15">15</button><button class="pill" data-d="60">60 (micro)</button></div>
-      <div class="row" style="margin-top:16px"><div><div class="eyebrow">Débit</div><div class="big" id="t-mlh">—</div></div>
-        <div style="text-align:right"><div class="eyebrow">Gouttes</div><div class="big" id="t-gtt">—</div></div></div>
-    </div>
-    <div class="card">
-      <h2>IMC</h2>
-      <div class="two"><div><label class="f">Poids (kg)</label><input class="in" type="number" id="t-kg" inputmode="decimal"></div>
-        <div><label class="f">Taille (cm)</label><input class="in" type="number" id="t-cm" value="165" inputmode="numeric"></div></div>
-      <div class="row" style="margin-top:14px"><div><div class="eyebrow">Résultat</div><div class="big" id="t-imc">—</div></div>
-        <div class="sub" id="t-imc-lbl" style="text-align:right"></div></div>
-    </div>
-  </section>
-
-  <!-- SETTINGS -->
-  <section class="page" id="p-set">
-    <div class="topbar"><div><h1>Réglages</h1><div class="date" id="set-account">—</div></div></div>
-    <div class="card">
-      <h2>Profil</h2>
-      <label class="f">Prénom</label><input class="in" id="s-name">
-      <div class="two"><div><label class="f">Poids (kg)</label><input class="in" type="number" id="s-weight" inputmode="decimal"></div>
-        <div><label class="f">Objectif eau (ml)</label><input class="in" type="number" id="s-goal" inputmode="numeric"></div></div>
-      <div class="two"><div><label class="f">Réveil</label><input class="in" type="time" id="s-wake"></div>
-        <div><label class="f">Coucher</label><input class="in" type="time" id="s-bed"></div></div>
-      <button class="btn solid wide" id="s-save">Enregistrer</button>
-    </div>
     <div class="card">
       <h2>Rappels</h2>
       <div class="item"><div class="name"><b>Notifications</b><span id="notif-state">—</span></div>
         <div class="sw" id="sw-notif"></div></div>
       <div class="item"><div class="name"><b>Pause toutes les 2 h</b><span>Deux minutes pour respirer</span></div>
         <div class="sw" id="sw-pause"></div></div>
-      <button class="btn wide" id="btn-test-notif">Tester une notification</button>
-      <div class="sub" id="rem-preview" style="margin-top:14px;line-height:1.8"></div>
     </div>
     <div class="card">
       <h2>Données</h2>
       <button class="btn wide" id="btn-export">Exporter mes données</button>
       <button class="btn wide" id="btn-update">Vérifier les mises à jour</button>
-      <button class="btn ghost wide" id="btn-logout">Se déconnecter</button>
       <div class="badge-note" id="cloud-state"><span class="dot-sync"></span>—</div>
       <div class="badge-note" id="app-version" style="margin-top:6px">—</div>
     </div>
@@ -652,7 +622,7 @@ const FIREBASE_CONFIG = {
 const VAPID_KEY = "BHF4uyKx2qXYuDTYFraniyKXRA2nac0o_AOp5WdL46onWZUI4ZTATnyZfi0AsL_7jVxXMrdiDmiYyFCNuhNd2q0";
 
 const FB_READY = !FIREBASE_CONFIG.apiKey.startsWith("COLLE");
-const APP_VERSION = "2.0.0";   // doit être identique à VERSION dans sw.js
+const APP_VERSION = "2.1.0";   // doit être identique à VERSION dans sw.js
 
 /* ============================================================
    2) OUTILS
@@ -938,12 +908,10 @@ function drawDial(){
    8) NAVIGATION
    ============================================================ */
 const TABS = [
-  ["p-home",  "🏠", "Accueil"],     ["p-water", "💧", "Eau"],
-  ["p-meals", "🍽️", "Repas"],       ["p-mood",  "💗", "Humeur"],
-  ["p-sleep", "🌙", "Sommeil"],     ["p-sched", "🗓️", "Horaires"],
-  ["p-stats", "📊", "Stats"],       ["p-relax", "🧘", "Détente"],
-  ["p-notes", "📝", "Notes"],       ["p-tools", "💉", "Outils"],
-  ["p-set",   "⚙️", "Réglages"]
+  ["p-home",  "🏠", "Accueil"], ["p-water", "💧", "Eau"],
+  ["p-meals", "🍽️", "Repas"],   ["p-mood",  "💗", "Humeur"],
+  ["p-sleep", "🌙", "Sommeil"], ["p-relax", "🧘", "Détente"],
+  ["p-notes", "📝", "Notes"],   ["p-set",   "⚙️", "Réglages"]
 ];
 $("#tabs").innerHTML = TABS.map(([id, e, t]) =>
   `<button data-go="${id}"><span class="e">${e}</span>${t}</button>`).join("");
@@ -1081,34 +1049,6 @@ function renderSleep(){
   })), "h");
 }
 
-function renderStats(){
-  const ks = last(7), p = profile();
-  const wa = avg(ks.map(k => clamp((S.days[k]?.water||0)/p.waterGoal,0,1))) * 100;
-  const me = avg(ks.map(k => {
-    const dd = S.days[k]; if(!dd) return 0;
-    return MEALS_DAY.filter(m => dd.meals[m.id]).length / 4;
-  })) * 100;
-  const sl = avgSleep(7);
-  const en = avg(ks.map(k => S.days[k]?.energy || 0).filter(Boolean));
-  $("#st-range").textContent = new Date(ks[0]+"T12:00:00").toLocaleDateString("fr-FR",{day:"numeric",month:"short"})
-    + " → " + new Date().toLocaleDateString("fr-FR",{day:"numeric",month:"short"});
-  $("#st-water").textContent = Math.round(wa) + "%"; $("#st-water-b").style.width = wa + "%";
-  $("#st-meals").textContent = Math.round(me) + "%"; $("#st-meals-b").style.width = me + "%";
-  $("#st-sleep").textContent = sl ? fmtDur(sl) : "—";
-  $("#st-energy").textContent = en ? (Math.round(en*10)/10) : "—";
-  barChart("#st-chart", last(14).map(k => ({
-    label: new Date(k+"T12:00:00").getDate(),
-    value: progress(k).pct
-  })), "%");
-  const bits = [];
-  if(wa < 70) bits.push("Ton point faible cette semaine, c'est l'eau. Mets un verre plein en évidence au poste.");
-  else bits.push("Ton hydratation tient bien la route 💧");
-  if(me < 70) bits.push("Tu sautes encore des repas. Le déjeuner de 11h45 est celui qui saute le plus souvent.");
-  if(sl && sl < 390) bits.push("Tes nuits sont courtes. Après une garde, une sieste de 90 minutes vaut mieux que 30.");
-  if(en && en < 5) bits.push("Ton énergie est basse. Parles-en si ça dure plus de deux semaines.");
-  $("#st-insight").innerHTML = bits.map(b => "· " + b).join("<br>");
-}
-
 function renderNotes(){
   const l = S.notes;
   $("#n-count").textContent = l.filter(n => !n.done).length;
@@ -1151,14 +1091,14 @@ function renderSched(){
       <button class="del" data-g="${k}">✕</button></div>`).join("")
     : `<div class="empty">Aucune garde enregistrée.</div>`;
   $$("#g-list .del").forEach(b => b.addEventListener("click", () => {
-    delete S.gardes[b.dataset.g]; save(); renderSched(); renderHome();
+    delete S.gardes[b.dataset.g]; save(); renderSched();
   }));
 }
 
 function renderSet(){
   const p = profile();
   $("#s-name").value = p.name; $("#s-weight").value = p.weight;
-  $("#s-goal").value = p.waterGoal; $("#s-wake").value = p.wake; $("#s-bed").value = p.bed;
+  $("#s-goal").value = p.waterGoal + " ml"; $("#s-wake").value = p.wake; $("#s-bed").value = p.bed;
   $("#sw-notif").classList.toggle("on", p.notif);
   $("#sw-pause").classList.toggle("on", p.pauseOn);
   $("#notif-state").textContent = ("Notification" in window)
@@ -1169,39 +1109,12 @@ function renderSet(){
   $("#set-account").textContent = fb?.auth?.currentUser?.email || "Compte";
   syncState(SYNC);
   $("#app-version").textContent = "Version " + APP_VERSION;
-  $("#rem-preview").innerHTML = "<b>Rappels d'aujourd'hui</b><br>" +
-    remindersToday().map(r => `${r.at} · ${r.title}`).join("<br>");
-}
-
-function renderTools(){
-  const calc = () => {
-    const v = +$("#t-vol").value || 0, h = +$("#t-dur").value || 1;
-    const d = +($(".pill.on[data-d]")?.dataset.d || 20);
-    const mlh = v / h;
-    $("#t-mlh").textContent = Math.round(mlh) + " ml/h";
-    $("#t-gtt").textContent = Math.round(mlh * d / 60) + " gtt/min";
-  };
-  const imc = () => {
-    const kg = +$("#t-kg").value || 0, cm = +$("#t-cm").value || 0;
-    if(!kg || !cm){ $("#t-imc").textContent = "—"; return; }
-    const v = kg / Math.pow(cm/100, 2);
-    $("#t-imc").textContent = (Math.round(v*10)/10);
-    $("#t-imc-lbl").textContent = v < 18.5 ? "Insuffisance pondérale" : v < 25 ? "Corpulence normale"
-      : v < 30 ? "Surpoids" : "Obésité";
-  };
-  if(!$("#t-kg").value) $("#t-kg").value = profile().weight;
-  ["#t-vol","#t-dur"].forEach(s => $(s).oninput = calc);
-  ["#t-kg","#t-cm"].forEach(s => $(s).oninput = imc);
-  $$("#t-drops .pill").forEach(b => b.onclick = () => {
-    $$("#t-drops .pill").forEach(x => x.classList.remove("on")); b.classList.add("on"); calc();
-  });
-  calc(); imc();
 }
 
 function render(id){
   ({ "p-home":renderHome, "p-water":renderWater, "p-meals":renderMeals, "p-mood":renderMood,
-     "p-sleep":renderSleep, "p-stats":renderStats, "p-notes":renderNotes, "p-sched":renderSched,
-     "p-set":renderSet, "p-tools":renderTools, "p-relax":renderRelax
+     "p-sleep":renderSleep, "p-notes":renderNotes, "p-relax":renderRelax,
+     "p-set":() => { renderSet(); renderSched(); }
    }[id] || (()=>{}))();
   bellBadge();
 }
@@ -1313,25 +1226,26 @@ $("#preset-clear").addEventListener("click", () => {
 $("#g-add").addEventListener("click", () => {
   const dt = $("#g-date").value; if(!dt) return toast("Choisis une date");
   S.gardes[dt] = { start:$("#g-start").value, end:$("#g-end").value };
-  save(); renderSched(); renderHome(); toast("Garde ajoutée. Les rappels s'adaptent.");
+  save(); renderSched(); toast("Garde ajoutée. Les rappels s'adaptent.");
 });
 $("#sw-garde").addEventListener("click", () => {
   const k = todayKey();
   if(S.gardes[k]){ delete S.gardes[k]; toast("Mode garde désactivé"); }
   else { S.gardes[k] = { start:"14:00", end:"08:00" }; toast("Mode garde activé 🌗"); }
-  save(); applyTheme(); renderSched();
+  save(); applyTheme(); renderSched(); renderSet();
 });
 
 $("#s-save").addEventListener("click", () => {
   const p = profile();
   p.name = $("#s-name").value.trim() || p.name;
   p.weight = +$("#s-weight").value || p.weight;
-  p.waterGoal = +$("#s-goal").value || Math.round(p.weight * 35 / 50) * 50;
+  p.waterGoal = Math.round(p.weight * 35 / 50) * 50;
   p.wake = $("#s-wake").value || p.wake; p.bed = $("#s-bed").value || p.bed;
   save(); renderSet(); hello(); toast("Profil enregistré");
 });
 $("#s-weight").addEventListener("input", e => {
-  const w = +e.target.value; if(w > 20) $("#s-goal").value = Math.round(w * 35 / 50) * 50;
+  const w = +e.target.value;
+  if(w > 20) $("#s-goal").value = Math.round(w * 35 / 50) * 50 + " ml";
 });
 $("#sw-pause").addEventListener("click", () => {
   S.profile.pauseOn = !S.profile.pauseOn; save(); renderSet();
@@ -1460,9 +1374,6 @@ $("#sw-notif").addEventListener("click", () => {
     S.profile.notif = false; save(); renderSet(); toast("Rappels en pause");
   } else askNotif();
 });
-$("#btn-test-notif").addEventListener("click", () => fire({
-  title:"💧 Ceci est un test", body:"Si tu vois ça, les rappels fonctionnent 🌸", page:"p-home", id:"test"
-}, false));
 
 async function fire(r, mark = true){
   if(!("Notification" in window) || Notification.permission !== "granted"){
@@ -1754,7 +1665,7 @@ $("#au-forgot").addEventListener("click", async () => {
   catch(e){ say(AUTH_ERR[e.code] || "Envoi impossible pour l'instant.", "err"); }
 });
 
-$("#btn-logout").addEventListener("click", async () => {
+$("#btn-out").addEventListener("click", async () => {
   if(!confirm("Se déconnecter ? Tes données restent dans ton compte.")) return;
   if(unsub){ unsub(); unsub = null; }
   if(fb && UID) await fb.signOut(fb.auth);
@@ -1811,8 +1722,7 @@ $("#install-x").addEventListener("click", () => {
   S.profile.hideInstall = true; save(); showInstallBar();
 });
 
-/* ---- déconnexion depuis l'en-tête ---- */
-$("#btn-out").addEventListener("click", () => $("#btn-logout").click());
+
 
 /* ============================================================
    17) DEMARRAGE
