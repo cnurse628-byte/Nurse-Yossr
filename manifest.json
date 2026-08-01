@@ -1,1 +1,23 @@
-
+{
+  "name": "Nurse Yossr",
+  "short_name": "Yossr",
+  "description": "Ton carnet de garde : hydratation, repas, pauses et repos.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FFF1F4",
+  "theme_color": "#FFF1F4",
+  "lang": "fr",
+  "dir": "ltr",
+  "categories": ["health", "lifestyle", "productivity"],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Ajouter 250 ml", "url": "./index.html#eau", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Prendre une pause", "url": "./index.html#pause", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] }
+  ]
+}
