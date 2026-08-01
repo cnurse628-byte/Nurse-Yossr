@@ -312,28 +312,6 @@ a{color:var(--accent)}
   <p class="msg" id="au-msg">Tes données sont enregistrées dans ton compte. Tu les retrouves sur n'importe quel téléphone.</p>
 </section>
 
-<!-- ============ FIREBASE PAS ENCORE CONFIGURÉ ============ -->
-<section id="gate-setup" class="gate hidden">
-  <div class="brand">
-    <img src="icons/icon-192.png" alt="" width="96" height="96">
-    <h1>Presque prête</h1>
-    <p>Il reste une étape</p>
-  </div>
-  <p class="lead">L'application enregistre tout dans Firebase. Ouvre <b>index.html</b>, remplace la
-  configuration en haut du script par celle de ton projet, fais pareil dans
-  <b>firebase-messaging-sw.js</b>, puis republie sur GitHub.</p>
-  <div class="code">const FIREBASE_CONFIG = {
-  apiKey:            "AIzaSy…",
-  authDomain:        "ton-projet.firebaseapp.com",
-  projectId:         "ton-projet",
-  storageBucket:     "ton-projet.appspot.com",
-  messagingSenderId: "1234567890",
-  appId:             "1:1234…:web:abc…"
-};</div>
-  <p class="msg" id="setup-msg">Le détail des étapes est dans le fichier README.md.</p>
-  <button class="btn wide" id="setup-retry">J'ai mis la configuration, réessayer</button>
-</section>
-
 <!-- ============ ONBOARDING ============ -->
 <section id="gate-onb" class="gate hidden">
   <div class="steps"><i class="on"></i><i></i><i></i><i></i></div>
@@ -613,12 +591,13 @@ a{color:var(--accent)}
    Puis mets la MEME config dans firebase-messaging-sw.js
    ============================================================ */
 const FIREBASE_CONFIG = {
-  apiKey:            "COLLE_TON_API_KEY",
-  authDomain:        "COLLE_TON_PROJET.firebaseapp.com",
-  projectId:         "COLLE_TON_PROJECT_ID",
-  storageBucket:     "COLLE_TON_PROJET.appspot.com",
-  messagingSenderId: "COLLE_TON_SENDER_ID",
-  appId:             "COLLE_TON_APP_ID"
+  apiKey:            "AIzaSyBxHBJNexCeZ40HSqOLsC5Xr0K3sFrE314",
+  authDomain:        "nurse-yossr.firebaseapp.com",
+  projectId:         "nurse-yossr",
+  storageBucket:     "nurse-yossr.firebasestorage.app",
+  messagingSenderId: "728514643834",
+  appId:             "1:728514643834:web:ebb56805aa449de2bc78c3",
+  measurementId:     "G-8T3BTJV4SB"
 };
 /* Console Firebase > Cloud Messaging > Web Push certificates > Key pair */
 const VAPID_KEY = "COLLE_TA_CLE_VAPID";
@@ -1354,7 +1333,8 @@ setInterval(tick, 30000);
 
 /* ---- Cloud Messaging (push depuis un serveur) ---- */
 async function initFCM(){
-  if(!FB_READY || !fb?.messaging || Notification.permission !== "granted") return;
+  if(!fb?.messaging || Notification.permission !== "granted") return;
+  if(!VAPID_KEY || VAPID_KEY.startsWith("COLLE")) return;   // clé pas encore générée
   try{
     const reg = await navigator.serviceWorker.register("firebase-messaging-sw.js", { scope:"./fcm/" });
     const token = await fb.getToken(fb.messaging, { vapidKey:VAPID_KEY, serviceWorkerRegistration:reg });
@@ -1571,6 +1551,11 @@ $("#au-pass").addEventListener("keydown", e => e.key === "Enter" && doAuth());
 $("#au-pass2").addEventListener("keydown", e => e.key === "Enter" && doAuth());
 
 const AUTH_ERR = {
+  "auth/configuration-not-found":"Authentication n'est pas encore activé dans la console Firebase : Build → Authentication → Commencer → Sign-in method → E-mail/Mot de passe → Activer.",
+  "auth/operation-not-allowed":  "La connexion par email n'est pas activée dans Firebase : Sign-in method → E-mail/Mot de passe → Activer.",
+  "auth/admin-restricted-operation":"La création de compte est bloquée dans Firebase : Authentication → Settings → décoche « Empêcher la création de comptes ».",
+  "auth/api-key-not-valid":      "La clé Firebase n'est pas bonne. Vérifie FIREBASE_CONFIG dans index.html.",
+  "auth/invalid-api-key":        "La clé Firebase n'est pas bonne. Vérifie FIREBASE_CONFIG dans index.html.",
   "auth/invalid-email":          "Cet email n'est pas valide.",
   "auth/missing-password":       "Il manque le mot de passe.",
   "auth/invalid-credential":     "Email ou mot de passe incorrect.",
@@ -1610,8 +1595,6 @@ $("#au-forgot").addEventListener("click", async () => {
   try{ await fb.reset(fb.auth, m); say("Email envoyé. Regarde ta boîte de réception 🌸", "ok"); }
   catch(e){ say(AUTH_ERR[e.code] || "Envoi impossible pour l'instant.", "err"); }
 });
-
-$("#setup-retry").addEventListener("click", () => location.reload());
 
 $("#btn-logout").addEventListener("click", async () => {
   if(!confirm("Se déconnecter ? Tes données restent dans ton compte.")) return;
@@ -1658,9 +1641,9 @@ function hideSplash(){
 
   if(!ok){
     setTimeout(() => {
-      hideSplash(); $("#gate-setup").classList.remove("hidden");
-      if(FB_READY) $("#setup-msg").textContent =
-        "La configuration est là mais Firebase ne répond pas. Vérifie les valeurs et ta connexion.";
+      hideSplash();
+      $("#gate-auth").classList.remove("hidden"); setAuthMode("in");
+      say("Firebase ne répond pas. Vérifie ta connexion internet, puis rouvre l'application.", "err");
     }, wait);
     return;
   }
