@@ -620,8 +620,10 @@ a{color:var(--accent)}
     <div class="card">
       <h2>Données</h2>
       <button class="btn wide" id="btn-export">Exporter mes données</button>
+      <button class="btn wide" id="btn-update">Vérifier les mises à jour</button>
       <button class="btn ghost wide" id="btn-logout">Se déconnecter</button>
       <div class="badge-note" id="cloud-state"><span class="dot-sync"></span>—</div>
+      <div class="badge-note" id="app-version" style="margin-top:6px">—</div>
     </div>
   </section>
 
@@ -650,6 +652,7 @@ const FIREBASE_CONFIG = {
 const VAPID_KEY = "BHF4uyKx2qXYuDTYFraniyKXRA2nac0o_AOp5WdL46onWZUI4ZTATnyZfi0AsL_7jVxXMrdiDmiYyFCNuhNd2q0";
 
 const FB_READY = !FIREBASE_CONFIG.apiKey.startsWith("COLLE");
+const APP_VERSION = "2.0.0";   // doit être identique à VERSION dans sw.js
 
 /* ============================================================
    2) OUTILS
@@ -1165,6 +1168,7 @@ function renderSet(){
     : "Non disponibles sur ce navigateur";
   $("#set-account").textContent = fb?.auth?.currentUser?.email || "Compte";
   syncState(SYNC);
+  $("#app-version").textContent = "Version " + APP_VERSION;
   $("#rem-preview").innerHTML = "<b>Rappels d'aujourd'hui</b><br>" +
     remindersToday().map(r => `${r.at} · ${r.title}`).join("<br>");
 }
@@ -1332,6 +1336,7 @@ $("#s-weight").addEventListener("input", e => {
 $("#sw-pause").addEventListener("click", () => {
   S.profile.pauseOn = !S.profile.pauseOn; save(); renderSet();
 });
+$("#btn-update").addEventListener("click", checkUpdate);
 $("#btn-export").addEventListener("click", () => {
   const blob = new Blob([JSON.stringify(S, null, 2)], { type:"application/json" });
   const a = document.createElement("a");
@@ -1411,8 +1416,37 @@ $("#btn-bell").addEventListener("click", () => {
 let swReg = null;
 async function initSW(){
   if(!("serviceWorker" in navigator)) return;
-  try{ swReg = await navigator.serviceWorker.register("sw.js", { scope:"./" }); }
-  catch(e){ console.warn("SW", e); }
+  try{
+    // la toute première prise de contrôle n'est pas une mise à jour : on l'ignore.
+    // toutes les suivantes = nouvelle version en ligne → on recharge une seule fois.
+    let controlled = !!navigator.serviceWorker.controller, reloading = false;
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if(!controlled){ controlled = true; return; }
+      if(reloading) return;
+      reloading = true;
+      toast("Nouvelle version installée 🌸");
+      setTimeout(() => location.reload(), 900);
+    });
+
+    swReg = await navigator.serviceWorker.register("sw.js", { scope:"./" });
+
+    // on cherche une mise à jour au retour sur l'app, et toutes les 30 minutes
+    const look = () => swReg && swReg.update().catch(() => {});
+    document.addEventListener("visibilitychange", () => { if(!document.hidden) look(); });
+    setInterval(look, 30 * 60 * 1000);
+  }catch(e){ console.warn("SW", e); }
+}
+
+async function checkUpdate(){
+  if(!swReg) return toast("Mises à jour indisponibles ici");
+  toast("Recherche…");
+  try{
+    await swReg.update();
+    setTimeout(() => {
+      if(swReg.waiting){ swReg.waiting.postMessage("skipWaiting"); toast("Mise à jour en cours…"); }
+      else toast("Tu as déjà la dernière version ✓");
+    }, 1400);
+  }catch(e){ toast("Pas de réseau pour vérifier"); }
 }
 async function askNotif(){
   if(!("Notification" in window)) return toast("Ce navigateur ne gère pas les notifications");
