@@ -1,5 +1,5 @@
-/* Nurse Yossr — service worker : cache offline + clic sur notification */
-const CACHE = "yossr-v1";
+const VERSION = "2.0.0";        
+const CACHE = "yossr-" + VERSION;
 const ASSETS = ["./", "./index.html", "./manifest.json",
                 "./icons/icon-192.png", "./icons/icon-512.png"];
 
@@ -22,6 +22,11 @@ self.addEventListener("fetch", e => {
       .then(r => { const c = r.clone(); caches.open(CACHE).then(x => x.put(e.request, c)); return r; })
       .catch(() => caches.match(e.request).then(r => r || caches.match("./index.html")))
   );
+});
+
+self.addEventListener("message", e => {
+  if(e.data === "version") e.source?.postMessage({ version: VERSION });
+  if(e.data === "skipWaiting") self.skipWaiting();
 });
 
 self.addEventListener("notificationclick", e => {
