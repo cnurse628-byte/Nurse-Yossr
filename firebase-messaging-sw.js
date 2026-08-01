@@ -17,8 +17,8 @@ messaging.onBackgroundMessage(payload => {
   const n = payload.notification || payload.data || {};
   self.registration.showNotification(n.title || "Nurse Yossr", {
     body: n.body || "C'est l'heure 🌸",
-    icon: "../icons/icon-192.png",
-    badge: "../icons/icon-192.png",
+    icon: "./icons/icon-192.png",
+    badge: "./icons/icon-192.png",
     vibrate: [60, 40, 60],
     data: { page: (payload.data && payload.data.page) || "p-home" }
   });
@@ -28,6 +28,6 @@ self.addEventListener("notificationclick", e => {
   e.notification.close();
   e.waitUntil(clients.matchAll({ type:"window", includeUncontrolled:true }).then(list => {
     for(const c of list){ if("focus" in c) return c.focus(); }
-    return clients.openWindow("../index.html");
+    return clients.openWindow("./index.html");
   }));
 });
