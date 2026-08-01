@@ -1,1 +1,1686 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<title>Nurse Yossr</title>
+<meta name="description" content="Ton carnet de garde : hydratation, repas, pauses et repos.">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#FFF1F4" media="(prefers-color-scheme: light)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Nurse Yossr">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 
+<style>
+/* ============================================================
+   NURSE YOSSR — design tokens
+   blush #FFF1F4 · porcelaine #FFFFFF · rose vive #E23E6B
+   grenade #8E1F42 · encre #3A2630 · menthe #2A9D8F
+   nuit #170F22 · lilas #C79BFF  (mode garde)
+   ============================================================ */
+:root{
+  --blush:#FFF1F4; --paper:#FFFFFF; --rose:#E23E6B; --rose-soft:#FFD9E3;
+  --grenade:#8E1F42; --encre:#3A2630; --mute:#8B7280; --menthe:#2A9D8F;
+  --line:#F5DCE3; --shadow:0 10px 30px -18px rgba(142,31,66,.45);
+  --bg:var(--blush); --surface:var(--paper); --text:var(--encre);
+  --head:var(--grenade); --accent:var(--rose); --accent-soft:var(--rose-soft);
+  --border:var(--line); --ring-bg:#FBE3EA;
+  --r:22px; --r-sm:14px;
+  --nav-h:72px;
+  --safe-b:env(safe-area-inset-bottom,0px);
+  --safe-t:env(safe-area-inset-top,0px);
+}
+[data-mode="garde"]{
+  --bg:#170F22; --surface:#221833; --text:#EDE4F5; --head:#F3E9FF;
+  --accent:#C79BFF; --accent-soft:#3A2A52; --border:#33244C;
+  --mute:#A08CBE; --ring-bg:#2C1F44; --menthe:#5FD6C0;
+  --shadow:0 12px 34px -20px rgba(0,0,0,.9);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  font-family:"Instrument Sans",system-ui,-apple-system,sans-serif;
+  background:var(--bg); color:var(--text);
+  -webkit-font-smoothing:antialiased; overscroll-behavior-y:none;
+  transition:background .5s ease,color .5s ease;
+}
+h1,h2,h3,.display{font-family:"Bricolage Grotesque","Instrument Sans",sans-serif;font-weight:800;letter-spacing:-.02em;color:var(--head);margin:0}
+button,input,select,textarea{font:inherit;color:inherit}
+button{border:none;background:none;cursor:pointer}
+.eyebrow{font-size:11px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--mute)}
+.hidden{display:none!important}
+
+/* ---------- app shell ---------- */
+#app{max-width:520px;margin:0 auto;min-height:100dvh;padding-top:var(--safe-t)}
+.page{display:none;padding:14px 18px calc(var(--nav-h) + 28px + var(--safe-b))}
+.page.on{display:block;animation:rise .38s cubic-bezier(.2,.9,.2,1)}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+/* ---------- top bar ---------- */
+.topbar{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;padding:20px 4px 18px}
+.topbar h1{font-size:26px;line-height:1.1}
+.topbar .date{font-size:12.5px;color:var(--mute);margin-top:4px}
+.chip{display:inline-flex;align-items:center;gap:6px;background:var(--accent-soft);color:var(--head);
+  padding:7px 12px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap}
+
+/* ---------- cards ---------- */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);
+  padding:18px;box-shadow:var(--shadow);margin-bottom:14px}
+.card h2{font-size:17px;margin-bottom:2px}
+.card .sub{font-size:12.5px;color:var(--mute)}
+.row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+
+/* ---------- SIGNATURE : l'anneau de garde ---------- */
+.dial-wrap{position:relative;display:grid;place-items:center;padding:6px 0 2px}
+.dial{width:min(330px,84vw);height:min(330px,84vw);display:block;overflow:visible}
+.dial .track{fill:none;stroke:var(--ring-bg);stroke-width:13}
+.dial .shift{fill:none;stroke:var(--accent);stroke-width:13;stroke-linecap:round;opacity:.32}
+.dial .prog{fill:none;stroke:var(--accent);stroke-width:13;stroke-linecap:round;
+  transition:stroke-dasharray .9s cubic-bezier(.2,.9,.2,1)}
+.dial .tick{stroke:var(--border);stroke-width:2}
+.dial .hour{fill:var(--mute);font-size:10px;font-weight:600;font-family:"Instrument Sans";text-anchor:middle}
+.dial .needle{stroke:var(--head);stroke-width:2.5;stroke-linecap:round}
+.dot{cursor:pointer;transition:transform .35s cubic-bezier(.2,1.6,.4,1)}
+.dot circle{stroke:var(--surface);stroke-width:3}
+.dot.done circle{fill:var(--menthe)}
+.dot.todo circle{fill:var(--ring-bg)}
+.dot.late circle{fill:var(--accent)}
+.dot.pop{animation:pop .5s cubic-bezier(.2,1.7,.4,1)}
+@keyframes pop{0%{transform:scale(1)}45%{transform:scale(1.55)}100%{transform:scale(1)}}
+.dial-center{position:absolute;text-align:center;pointer-events:none}
+.dial-center .pct{font-family:"Bricolage Grotesque";font-weight:800;font-size:46px;line-height:1;color:var(--head)}
+.dial-center .lbl{font-size:11.5px;color:var(--mute);margin-top:6px;letter-spacing:.06em;text-transform:uppercase;font-weight:600}
+.legend{display:flex;justify-content:center;gap:14px;flex-wrap:wrap;margin-top:10px;font-size:11.5px;color:var(--mute)}
+.legend i{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:5px;vertical-align:middle}
+
+/* ---------- quick tiles ---------- */
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
+.tile{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);
+  padding:13px 6px;text-align:center;transition:transform .18s,border-color .18s}
+.tile:active{transform:scale(.94)}
+.tile .ico{font-size:21px}
+.tile .t{font-size:11px;color:var(--mute);margin-top:5px;font-weight:600}
+.tile .v{font-size:13px;font-weight:600;color:var(--head);margin-top:2px}
+.tile.ok{border-color:var(--menthe)}
+
+/* ---------- water ---------- */
+.glass{position:relative;height:210px;border-radius:26px;overflow:hidden;
+  background:var(--accent-soft);border:1px solid var(--border);display:grid;place-items:center}
+.fill{position:absolute;left:0;right:0;bottom:0;background:var(--accent);opacity:.55;
+  transition:height 1s cubic-bezier(.2,.9,.2,1)}
+.fill::before{content:"";position:absolute;top:-14px;left:-50%;width:200%;height:28px;background:var(--accent);
+  border-radius:50%;animation:wave 5s linear infinite}
+@keyframes wave{from{transform:translateX(-25%) }to{transform:translateX(0%)}}
+.glass .read{position:relative;text-align:center}
+.glass .read b{font-family:"Bricolage Grotesque";font-size:40px;color:var(--head);display:block;line-height:1}
+.glass .read span{font-size:12.5px;color:var(--head);opacity:.75}
+.btns{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:12px}
+.btn{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);
+  padding:14px 6px;font-weight:600;font-size:14px;color:var(--head);transition:transform .15s}
+.btn:active{transform:scale(.95)}
+.btn.solid{background:var(--accent);color:#fff;border-color:transparent}
+.btn.ghost{background:transparent}
+.btn.wide{width:100%;padding:15px;margin-top:10px}
+.btn.sm{padding:9px 14px;font-size:13px;border-radius:999px}
+
+/* ---------- lists ---------- */
+.item{display:flex;align-items:center;gap:13px;padding:13px 0;border-bottom:1px solid var(--border)}
+.item:last-child{border-bottom:none}
+.item .name{flex:1}
+.item .name b{display:block;font-size:14.5px;font-weight:600;color:var(--head)}
+.item .name span{font-size:12px;color:var(--mute)}
+.check{width:30px;height:30px;border-radius:50%;border:2px solid var(--border);display:grid;place-items:center;
+  font-size:15px;color:transparent;transition:.22s;flex:none}
+.check.on{background:var(--menthe);border-color:var(--menthe);color:#fff}
+
+/* ---------- mood ---------- */
+.moods{display:flex;justify-content:space-between;gap:6px;margin:6px 0 4px}
+.mood{flex:1;aspect-ratio:1;border-radius:16px;background:var(--accent-soft);font-size:26px;
+  display:grid;place-items:center;transition:transform .2s,box-shadow .2s;border:2px solid transparent}
+.mood.on{transform:translateY(-5px) scale(1.06);border-color:var(--accent);background:var(--surface)}
+input[type=range]{width:100%;accent-color:var(--accent);margin-top:10px}
+
+/* ---------- forms ---------- */
+label.f{display:block;margin:12px 0 6px;font-size:12.5px;font-weight:600;color:var(--mute)}
+.in{width:100%;padding:14px;border-radius:var(--r-sm);border:1px solid var(--border);
+  background:var(--bg);color:var(--text);outline:none;transition:border-color .2s}
+.in:focus{border-color:var(--accent)}
+textarea.in{min-height:88px;resize:vertical;font-family:inherit}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+/* ---------- schedule ---------- */
+.day{display:grid;grid-template-columns:64px 1fr auto;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--border)}
+.day b{font-size:13.5px;color:var(--head)}
+.day .h{display:flex;gap:6px}
+.day .h input{padding:9px;border-radius:10px;border:1px solid var(--border);background:var(--bg);color:var(--text);width:100%}
+.sw{width:46px;height:27px;border-radius:999px;background:var(--border);position:relative;transition:.25s;flex:none}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:21px;height:21px;border-radius:50%;background:#fff;transition:.25s}
+.sw.on{background:var(--menthe)}
+.sw.on::after{transform:translateX(19px)}
+
+/* ---------- stats ---------- */
+.stat{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;padding:9px 0}
+.bar{height:9px;border-radius:99px;background:var(--ring-bg);overflow:hidden;margin-top:7px}
+.bar i{display:block;height:100%;background:var(--accent);border-radius:99px;transition:width .8s}
+.big{font-family:"Bricolage Grotesque";font-size:30px;color:var(--head);font-weight:800;line-height:1}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+svg.chart{width:100%;height:130px;overflow:visible}
+svg.chart .gl{stroke:var(--border);stroke-width:1}
+svg.chart .bar{fill:var(--accent);rx:4}
+svg.chart .ln{fill:none;stroke:var(--accent);stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+svg.chart text{font-size:9px;fill:var(--mute);font-family:"Instrument Sans"}
+
+/* ---------- breathe ---------- */
+.breathe{display:grid;place-items:center;height:250px;position:relative}
+.orb{width:120px;height:120px;border-radius:50%;background:var(--accent);opacity:.28;
+  display:grid;place-items:center;transition:transform 4s ease-in-out}
+.orb .in{position:absolute;font-size:15px;font-weight:600;color:var(--head)}
+.orb.big{transform:scale(1.85)}
+.sounds{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:6px}
+.sound{padding:16px 6px;border-radius:var(--r-sm);background:var(--surface);border:1px solid var(--border);text-align:center;font-size:12.5px;color:var(--head);font-weight:600}
+.sound.on{border-color:var(--accent);background:var(--accent-soft)}
+.sound .ico{display:block;font-size:20px;margin-bottom:5px}
+
+/* ---------- nav ---------- */
+nav{position:fixed;bottom:0;left:0;right:0;z-index:40;
+  background:color-mix(in srgb,var(--surface) 88%,transparent);backdrop-filter:blur(18px);
+  border-top:1px solid var(--border);padding-bottom:var(--safe-b)}
+nav .inner{max-width:520px;margin:0 auto;display:grid;grid-template-columns:repeat(5,1fr);height:var(--nav-h)}
+nav button{display:grid;place-items:center;gap:3px;font-size:10.5px;color:var(--mute);font-weight:600}
+nav button .ico{font-size:19px;line-height:1;transition:transform .25s}
+nav button.on{color:var(--accent)}
+nav button.on .ico{transform:translateY(-3px) scale(1.12)}
+
+/* ---------- sheets / modals ---------- */
+.sheet{position:fixed;inset:0;z-index:60;display:none}
+.sheet.on{display:block}
+.sheet .bd{position:absolute;inset:0;background:rgba(30,10,20,.45);animation:fade .25s}
+.sheet .pnl{position:absolute;left:0;right:0;bottom:0;max-width:520px;margin:0 auto;
+  background:var(--surface);border-radius:26px 26px 0 0;padding:22px 20px calc(26px + var(--safe-b));
+  max-height:88dvh;overflow:auto;animation:up .32s cubic-bezier(.2,.9,.2,1)}
+@keyframes up{from{transform:translateY(100%)}to{transform:none}}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.grab{width:40px;height:4px;border-radius:9px;background:var(--border);margin:0 auto 16px}
+
+/* ---------- toast ---------- */
+#toast{position:fixed;left:50%;bottom:calc(var(--nav-h) + 20px + var(--safe-b));transform:translateX(-50%) translateY(20px);
+  background:var(--head);color:var(--surface);padding:12px 18px;border-radius:999px;font-size:13.5px;font-weight:600;
+  z-index:80;opacity:0;pointer-events:none;transition:.3s;max-width:88vw;text-align:center}
+#toast.on{opacity:1;transform:translateX(-50%)}
+
+/* ---------- splash / auth / onboarding ---------- */
+#splash{position:fixed;inset:0;background:var(--bg);z-index:100;display:grid;place-items:center;transition:opacity .5s}
+#splash .m{text-align:center;animation:rise .6s}
+#splash .m img{width:104px;height:104px;border-radius:28px;
+  box-shadow:0 24px 48px -22px rgba(142,31,66,.6);animation:beat 2.4s ease-in-out infinite}
+@keyframes beat{0%,100%{transform:scale(1)}50%{transform:scale(1.045)}}
+#splash h1{font-size:30px;margin-top:10px}
+#splash p{color:var(--mute);font-size:13px;margin-top:6px}
+.gate{max-width:520px;margin:0 auto;padding:calc(34px + var(--safe-t)) 22px 40px;min-height:100dvh}
+.gate h1{font-size:32px;line-height:1.08}
+.gate p.lead{color:var(--mute);font-size:14px;margin:10px 0 4px;line-height:1.6}
+.steps{display:flex;gap:6px;margin-bottom:26px}
+.steps i{height:4px;flex:1;background:var(--border);border-radius:9px;transition:.3s}
+.steps i.on{background:var(--accent)}
+.badge-note{font-size:12px;color:var(--mute);text-align:center;margin-top:16px;line-height:1.6}
+a{color:var(--accent)}
+
+/* ---------- marque + onglets d'accès ---------- */
+.brand{text-align:center;margin:4px 0 28px}
+.brand img{width:96px;height:96px;border-radius:26px;display:block;margin:0 auto;
+  box-shadow:0 22px 44px -20px rgba(142,31,66,.6)}
+.brand h1{font-size:29px;margin-top:18px}
+.brand p{color:var(--mute);font-size:13.5px;margin:7px 0 0}
+.tabs{display:grid;grid-template-columns:1fr 1fr;background:var(--accent-soft);
+  border-radius:999px;padding:4px;margin-bottom:4px}
+.tabs button{padding:12px;border-radius:999px;font-size:13.5px;font-weight:600;color:var(--head);transition:.22s}
+.tabs button.on{background:var(--surface);box-shadow:0 5px 14px -8px rgba(142,31,66,.55)}
+.msg{font-size:12.5px;text-align:center;margin-top:16px;line-height:1.6;color:var(--mute)}
+.msg.err{color:var(--rose);font-weight:600}
+.msg.ok{color:var(--menthe);font-weight:600}
+.code{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);
+  padding:14px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;
+  color:var(--head);overflow-x:auto;white-space:pre;line-height:1.7;margin-top:12px}
+.dot-sync{width:8px;height:8px;border-radius:50%;background:var(--menthe);display:inline-block;margin-right:7px}
+.dot-sync.off{background:var(--mute)}
+
+/* ---------- misc ---------- */
+.quote{background:var(--accent-soft);border:none;border-radius:var(--r);padding:20px}
+.quote p{margin:0;font-family:"Bricolage Grotesque";font-weight:600;font-size:16px;line-height:1.45;color:var(--head)}
+.quote small{display:block;margin-top:9px;font-size:12px;color:var(--mute)}
+.pillrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.pill{padding:9px 14px;border-radius:999px;border:1px solid var(--border);font-size:12.5px;font-weight:600;color:var(--mute)}
+.pill.on{background:var(--accent);color:#fff;border-color:transparent}
+.hist{display:flex;gap:5px;margin-top:12px}
+.hist div{flex:1;height:34px;border-radius:8px;background:var(--ring-bg);display:grid;place-items:center;font-size:14px}
+.menu-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.menu-grid button{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);
+  padding:18px 14px;text-align:left}
+.menu-grid .ico{font-size:22px;display:block;margin-bottom:8px}
+.menu-grid b{display:block;font-size:14px;color:var(--head)}
+.menu-grid span{font-size:11.5px;color:var(--mute)}
+.note-item{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
+.note-item.done .txt{text-decoration:line-through;color:var(--mute)}
+.note-item .txt{flex:1;font-size:14.5px}
+.del{color:var(--mute);font-size:17px;padding:4px 8px}
+.streak{display:flex;align-items:center;gap:10px;background:var(--accent-soft);border-radius:999px;padding:8px 14px;font-size:12.5px;font-weight:600;color:var(--head)}
+.empty{text-align:center;color:var(--mute);font-size:13px;padding:26px 10px;line-height:1.6}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}
+}
+</style>
+</head>
+<body>
+
+<!-- ============ SPLASH ============ -->
+<div id="splash">
+  <div class="m">
+    <img src="icons/icon-192.png" alt="" width="104" height="104">
+    <h1>Nurse Yossr</h1>
+    <p>Ton carnet de garde</p>
+  </div>
+</div>
+
+<!-- ============ AUTH ============ -->
+<section id="gate-auth" class="gate hidden">
+  <div class="brand">
+    <img src="icons/icon-192.png" alt="" width="96" height="96">
+    <h1>Nurse Yossr</h1>
+    <p>Ton carnet de garde</p>
+  </div>
+  <div class="tabs">
+    <button class="on" data-tab="in">Se connecter</button>
+    <button data-tab="up">Créer un compte</button>
+  </div>
+  <label class="f">Email</label>
+  <input id="au-mail" class="in" type="email" inputmode="email" autocomplete="email"
+         autocapitalize="off" spellcheck="false" placeholder="yossr@exemple.com">
+  <label class="f">Mot de passe</label>
+  <input id="au-pass" class="in" type="password" autocomplete="current-password" placeholder="6 caractères minimum">
+  <div id="up-only" class="hidden">
+    <label class="f">Confirme le mot de passe</label>
+    <input id="au-pass2" class="in" type="password" autocomplete="new-password" placeholder="Retape-le">
+  </div>
+  <button class="btn solid wide" id="au-go">Se connecter</button>
+  <button class="btn ghost wide" id="au-forgot">Mot de passe oublié ?</button>
+  <p class="msg" id="au-msg">Tes données sont enregistrées dans ton compte. Tu les retrouves sur n'importe quel téléphone.</p>
+</section>
+
+<!-- ============ FIREBASE PAS ENCORE CONFIGURÉ ============ -->
+<section id="gate-setup" class="gate hidden">
+  <div class="brand">
+    <img src="icons/icon-192.png" alt="" width="96" height="96">
+    <h1>Presque prête</h1>
+    <p>Il reste une étape</p>
+  </div>
+  <p class="lead">L'application enregistre tout dans Firebase. Ouvre <b>index.html</b>, remplace la
+  configuration en haut du script par celle de ton projet, fais pareil dans
+  <b>firebase-messaging-sw.js</b>, puis republie sur GitHub.</p>
+  <div class="code">const FIREBASE_CONFIG = {
+  apiKey:            "AIzaSy…",
+  authDomain:        "ton-projet.firebaseapp.com",
+  projectId:         "ton-projet",
+  storageBucket:     "ton-projet.appspot.com",
+  messagingSenderId: "1234567890",
+  appId:             "1:1234…:web:abc…"
+};</div>
+  <p class="msg" id="setup-msg">Le détail des étapes est dans le fichier README.md.</p>
+  <button class="btn wide" id="setup-retry">J'ai mis la configuration, réessayer</button>
+</section>
+
+<!-- ============ ONBOARDING ============ -->
+<section id="gate-onb" class="gate hidden">
+  <div class="steps"><i class="on"></i><i></i><i></i><i></i></div>
+  <div id="onb-body"></div>
+  <button class="btn solid wide" id="onb-next">Continuer</button>
+  <button class="btn ghost wide" id="onb-back">Retour</button>
+</section>
+
+<!-- ============ APP ============ -->
+<main id="app" class="hidden">
+
+  <!-- HOME -->
+  <section class="page on" id="p-home">
+    <div class="topbar">
+      <div>
+        <h1 id="greet">Bonjour</h1>
+        <div class="date" id="today-line">—</div>
+      </div>
+      <div class="chip" id="shift-chip">—</div>
+    </div>
+
+    <div class="card">
+      <div class="dial-wrap">
+        <svg class="dial" viewBox="-32 -32 304 304" id="dial" aria-label="Anneau de garde"></svg>
+        <div class="dial-center">
+          <div class="pct" id="dial-pct">0%</div>
+          <div class="lbl">aujourd'hui</div>
+        </div>
+      </div>
+      <div class="legend">
+        <span><i style="background:var(--menthe)"></i>fait</span>
+        <span><i style="background:var(--accent)"></i>à faire maintenant</span>
+        <span><i style="background:var(--ring-bg)"></i>plus tard</span>
+      </div>
+    </div>
+
+    <div class="tiles" id="home-tiles"></div>
+
+    <div class="card quote" style="margin-top:14px">
+      <div class="eyebrow" style="margin-bottom:8px">Pensée du jour</div>
+      <p id="q-fr">—</p>
+      <small id="q-tn">—</small>
+    </div>
+
+    <div class="card">
+      <div class="row">
+        <div><h2>Prochain rappel</h2><div class="sub" id="next-rem">—</div></div>
+        <div class="streak" id="streak-box">🔥 0</div>
+      </div>
+      <button class="btn solid wide" id="btn-pause">🧘 Je prends ma pause (2 min)</button>
+    </div>
+  </section>
+
+  <!-- WATER -->
+  <section class="page" id="p-water">
+    <div class="topbar"><div><h1>Hydratation</h1><div class="date" id="w-goal-line">—</div></div>
+      <div class="chip" id="w-left">—</div></div>
+    <div class="card">
+      <div class="glass"><div class="fill" id="w-fill" style="height:0%"></div>
+        <div class="read"><b id="w-val">0</b><span id="w-of">ml</span></div></div>
+      <div class="btns">
+        <button class="btn" data-add="100">+100 ml</button>
+        <button class="btn" data-add="250">+250 ml</button>
+        <button class="btn" data-add="500">+500 ml</button>
+      </div>
+      <button class="btn ghost wide" id="w-undo">Annuler le dernier verre</button>
+    </div>
+    <div class="card"><h2>Les 7 derniers jours</h2><div class="sub">Objectif atteint ou pas</div>
+      <svg class="chart" id="w-chart"></svg></div>
+  </section>
+
+  <!-- MEALS -->
+  <section class="page" id="p-meals">
+    <div class="topbar"><div><h1>Repas</h1><div class="date" id="m-mode">—</div></div>
+      <div class="chip" id="m-count">0/4</div></div>
+    <div class="card" id="meal-list"></div>
+    <div class="card"><h2>Historique</h2><div class="sub">7 derniers jours</div><div class="hist" id="m-hist"></div></div>
+  </section>
+
+  <!-- MOOD -->
+  <section class="page" id="p-mood">
+    <div class="topbar"><div><h1>Comment tu te sens ?</h1><div class="date">Chaque soir, une minute pour toi</div></div></div>
+    <div class="card">
+      <div class="moods" id="mood-row">
+        <button class="mood" data-m="5">😀</button><button class="mood" data-m="4">🙂</button>
+        <button class="mood" data-m="3">😐</button><button class="mood" data-m="2">😔</button>
+        <button class="mood" data-m="1">😫</button>
+      </div>
+      <label class="f">Énergie : <span id="en-val">5</span>/10</label>
+      <input type="range" min="1" max="10" value="5" id="en-range">
+      <label class="f">Une note pour toi</label>
+      <textarea class="in" id="mood-note" placeholder="Journée chargée mais j'ai tenu…"></textarea>
+      <button class="btn solid wide" id="mood-save">Enregistrer</button>
+    </div>
+    <div class="card"><h2>Ton humeur cette semaine</h2><svg class="chart" id="mood-chart"></svg></div>
+  </section>
+
+  <!-- MORE -->
+  <section class="page" id="p-more">
+    <div class="topbar"><div><h1>Plus</h1><div class="date">Tout le reste est ici</div></div></div>
+    <div class="menu-grid">
+      <button data-go="p-sleep"><span class="ico">🌙</span><b>Sommeil</b><span>Coucher, réveil, durée</span></button>
+      <button data-go="p-stats"><span class="ico">📊</span><b>Statistiques</b><span>Ta semaine en chiffres</span></button>
+      <button data-go="p-relax"><span class="ico">🧘</span><b>Détente</b><span>Respiration, sons, adhkar</span></button>
+      <button data-go="p-notes"><span class="ico">📝</span><b>Notes</b><span>Ta checklist perso</span></button>
+      <button data-go="p-sched"><span class="ico">🗓️</span><b>Horaires</b><span>Semaine et gardes</span></button>
+      <button data-go="p-tools"><span class="ico">💉</span><b>Outils</b><span>Débit, IMC, conversions</span></button>
+      <button data-go="p-set"><span class="ico">⚙️</span><b>Réglages</b><span>Profil et rappels</span></button>
+      <button id="btn-garde-tog"><span class="ico">🌗</span><b>Mode garde</b><span id="garde-state">Désactivé</span></button>
+    </div>
+  </section>
+
+  <!-- SLEEP -->
+  <section class="page" id="p-sleep">
+    <div class="topbar"><div><h1>Sommeil</h1><div class="date" id="sl-mode">—</div></div>
+      <div class="chip" id="sl-dur">—</div></div>
+    <div class="card">
+      <div class="two">
+        <div><label class="f">Coucher</label><input class="in" type="time" id="sl-bed"></div>
+        <div><label class="f">Réveil</label><input class="in" type="time" id="sl-wake"></div>
+      </div>
+      <button class="btn solid wide" id="sl-save">Enregistrer la nuit</button>
+      <div class="sub" id="sl-tip" style="margin-top:12px"></div>
+    </div>
+    <div class="card"><h2>7 dernières nuits</h2><svg class="chart" id="sl-chart"></svg></div>
+  </section>
+
+  <!-- STATS -->
+  <section class="page" id="p-stats">
+    <div class="topbar"><div><h1>Cette semaine</h1><div class="date" id="st-range">—</div></div></div>
+    <div class="grid2">
+      <div class="card"><div class="eyebrow">Eau</div><div class="big" id="st-water">0%</div><div class="bar"><i id="st-water-b"></i></div></div>
+      <div class="card"><div class="eyebrow">Repas</div><div class="big" id="st-meals">0%</div><div class="bar"><i id="st-meals-b"></i></div></div>
+      <div class="card"><div class="eyebrow">Sommeil</div><div class="big" id="st-sleep">—</div><div class="sub">moyenne / nuit</div></div>
+      <div class="card"><div class="eyebrow">Énergie</div><div class="big" id="st-energy">—</div><div class="sub">moyenne / 10</div></div>
+    </div>
+    <div class="card"><h2>Régularité sur 14 jours</h2><svg class="chart" id="st-chart"></svg></div>
+    <div class="card"><h2>Ce que ça dit</h2><div class="sub" id="st-insight" style="line-height:1.7;margin-top:6px">—</div></div>
+  </section>
+
+  <!-- RELAX -->
+  <section class="page" id="p-relax">
+    <div class="topbar"><div><h1>Détente</h1><div class="date">5 minutes suffisent</div></div>
+      <div class="chip" id="rx-timer">05:00</div></div>
+    <div class="card">
+      <div class="breathe"><div class="orb" id="orb"><span class="in" id="orb-txt">Prête ?</span></div></div>
+      <button class="btn solid wide" id="rx-start">Commencer la respiration</button>
+      <div class="pillrow" style="justify-content:center">
+        <button class="pill on" data-min="1">1 min</button><button class="pill" data-min="3">3 min</button>
+        <button class="pill" data-min="5">5 min</button><button class="pill" data-min="10">10 min</button>
+      </div>
+    </div>
+    <div class="card"><h2>Sons d'ambiance</h2><div class="sub">Générés sur l'appareil, aucun téléchargement</div>
+      <div class="sounds">
+        <button class="sound" data-snd="pluie"><span class="ico">🌧️</span>Pluie</button>
+        <button class="sound" data-snd="mer"><span class="ico">🌊</span>Mer</button>
+        <button class="sound" data-snd="foret"><span class="ico">🌲</span>Forêt</button>
+      </div>
+      <button class="btn ghost wide" id="snd-stop">Couper le son</button>
+    </div>
+    <div class="card"><h2>Adhkar</h2><div class="sub">Un rappel à lire tranquillement</div>
+      <div id="dhikr-box" style="margin-top:12px"></div>
+      <button class="btn wide" id="dhikr-next">Un autre</button></div>
+  </section>
+
+  <!-- NOTES -->
+  <section class="page" id="p-notes">
+    <div class="topbar"><div><h1>Notes</h1><div class="date">Ce qu'il ne faut pas oublier</div></div>
+      <div class="chip" id="n-count">0</div></div>
+    <div class="card">
+      <div class="two" style="grid-template-columns:1fr auto">
+        <input class="in" id="n-input" placeholder="Acheter des vitamines…">
+        <button class="btn solid" id="n-add" style="padding:14px 20px">Ajouter</button>
+      </div>
+      <div id="n-list"></div>
+    </div>
+  </section>
+
+  <!-- SCHEDULE -->
+  <section class="page" id="p-sched">
+    <div class="topbar"><div><h1>Horaires</h1><div class="date">Les rappels s'adaptent tout seuls</div></div></div>
+    <div class="card">
+      <h2>Semaine type</h2>
+      <div class="pillrow" style="margin-bottom:6px">
+        <button class="pill" id="preset-fixe">Lundi → Samedi · 08h-14h</button>
+        <button class="pill" id="preset-clear">Tout mettre en repos</button>
+      </div>
+      <div id="sched-list"></div>
+    </div>
+    <div class="card">
+      <h2>Ajouter une garde</h2>
+      <div class="sub">Une nuit exceptionnelle, en dehors de la semaine type</div>
+      <div class="two" style="margin-top:10px">
+        <div><label class="f">Date</label><input class="in" type="date" id="g-date"></div>
+        <div><label class="f">Début</label><input class="in" type="time" id="g-start" value="14:00"></div>
+      </div>
+      <label class="f">Fin (le lendemain)</label><input class="in" type="time" id="g-end" value="08:00">
+      <button class="btn solid wide" id="g-add">Ajouter la garde</button>
+      <div id="g-list" style="margin-top:12px"></div>
+    </div>
+  </section>
+
+  <!-- TOOLS -->
+  <section class="page" id="p-tools">
+    <div class="topbar"><div><h1>Outils</h1><div class="date">Vérifie toujours avec le protocole du service</div></div></div>
+    <div class="card">
+      <h2>Débit de perfusion</h2>
+      <div class="two">
+        <div><label class="f">Volume (ml)</label><input class="in" type="number" id="t-vol" value="500" inputmode="numeric"></div>
+        <div><label class="f">Durée (h)</label><input class="in" type="number" id="t-dur" value="4" step="0.25" inputmode="decimal"></div>
+      </div>
+      <label class="f">Gouttes par ml</label>
+      <div class="pillrow" id="t-drops"><button class="pill on" data-d="20">20 (macro)</button><button class="pill" data-d="15">15</button><button class="pill" data-d="60">60 (micro)</button></div>
+      <div class="row" style="margin-top:16px"><div><div class="eyebrow">Débit</div><div class="big" id="t-mlh">—</div></div>
+        <div style="text-align:right"><div class="eyebrow">Gouttes</div><div class="big" id="t-gtt">—</div></div></div>
+    </div>
+    <div class="card">
+      <h2>IMC</h2>
+      <div class="two"><div><label class="f">Poids (kg)</label><input class="in" type="number" id="t-kg" inputmode="decimal"></div>
+        <div><label class="f">Taille (cm)</label><input class="in" type="number" id="t-cm" value="165" inputmode="numeric"></div></div>
+      <div class="row" style="margin-top:14px"><div><div class="eyebrow">Résultat</div><div class="big" id="t-imc">—</div></div>
+        <div class="sub" id="t-imc-lbl" style="text-align:right"></div></div>
+    </div>
+  </section>
+
+  <!-- SETTINGS -->
+  <section class="page" id="p-set">
+    <div class="topbar"><div><h1>Réglages</h1><div class="date" id="set-account">—</div></div></div>
+    <div class="card">
+      <h2>Profil</h2>
+      <label class="f">Prénom</label><input class="in" id="s-name">
+      <div class="two"><div><label class="f">Poids (kg)</label><input class="in" type="number" id="s-weight" inputmode="decimal"></div>
+        <div><label class="f">Objectif eau (ml)</label><input class="in" type="number" id="s-goal" inputmode="numeric"></div></div>
+      <div class="two"><div><label class="f">Réveil</label><input class="in" type="time" id="s-wake"></div>
+        <div><label class="f">Coucher</label><input class="in" type="time" id="s-bed"></div></div>
+      <button class="btn solid wide" id="s-save">Enregistrer</button>
+    </div>
+    <div class="card">
+      <h2>Rappels</h2>
+      <div class="item"><div class="name"><b>Notifications</b><span id="notif-state">—</span></div>
+        <div class="sw" id="sw-notif"></div></div>
+      <div class="item"><div class="name"><b>Pause toutes les 2 h</b><span>Deux minutes pour respirer</span></div>
+        <div class="sw" id="sw-pause"></div></div>
+      <div class="item"><div class="name"><b>Langue des messages</b><span>Français ou tounsi</span></div>
+        <div class="pillrow"><button class="pill" data-lang="fr">FR</button><button class="pill" data-lang="tn">TN</button></div></div>
+      <button class="btn wide" id="btn-test-notif">Tester une notification</button>
+      <div class="sub" id="rem-preview" style="margin-top:14px;line-height:1.8"></div>
+    </div>
+    <div class="card">
+      <h2>Données</h2>
+      <button class="btn wide" id="btn-export">Exporter mes données</button>
+      <button class="btn wide" id="btn-install">Installer sur l'écran d'accueil</button>
+      <button class="btn ghost wide" id="btn-logout">Se déconnecter</button>
+      <div class="badge-note" id="cloud-state"><span class="dot-sync"></span>—</div>
+    </div>
+  </section>
+
+  <nav>
+    <div class="inner">
+      <button data-go="p-home" class="on"><span class="ico">🏠</span>Accueil</button>
+      <button data-go="p-water"><span class="ico">💧</span>Eau</button>
+      <button data-go="p-meals"><span class="ico">🍽️</span>Repas</button>
+      <button data-go="p-mood"><span class="ico">💗</span>Humeur</button>
+      <button data-go="p-more"><span class="ico">⋯</span>Plus</button>
+    </div>
+  </nav>
+</main>
+
+<div id="toast"></div>
+<div class="sheet" id="sheet"><div class="bd"></div><div class="pnl"><div class="grab"></div><div id="sheet-body"></div></div></div>
+
+<script type="module">
+/* ============================================================
+   1) CONFIGURATION FIREBASE
+   Remplace les valeurs ci-dessous par celles de ton projet.
+   Console Firebase > Paramètres du projet > Tes applications > Web
+   Puis mets la MEME config dans firebase-messaging-sw.js
+   ============================================================ */
+const FIREBASE_CONFIG = {
+  apiKey:            "COLLE_TON_API_KEY",
+  authDomain:        "COLLE_TON_PROJET.firebaseapp.com",
+  projectId:         "COLLE_TON_PROJECT_ID",
+  storageBucket:     "COLLE_TON_PROJET.appspot.com",
+  messagingSenderId: "COLLE_TON_SENDER_ID",
+  appId:             "COLLE_TON_APP_ID"
+};
+/* Console Firebase > Cloud Messaging > Web Push certificates > Key pair */
+const VAPID_KEY = "COLLE_TA_CLE_VAPID";
+
+const FB_READY = !FIREBASE_CONFIG.apiKey.startsWith("COLLE");
+
+/* ============================================================
+   2) OUTILS
+   ============================================================ */
+const $  = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const pad = n => String(n).padStart(2, "0");
+const keyOf = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const todayKey = () => keyOf(new Date());
+const toMin = t => { const [h,m] = (t||"0:0").split(":").map(Number); return h*60 + (m||0); };
+const toHM  = m => `${pad(Math.floor(((m%1440)+1440)%1440/60))}:${pad(((m%60)+60)%60)}`;
+const nowMin = () => { const d = new Date(); return d.getHours()*60 + d.getMinutes(); };
+const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+const DAYS_FR = ["Dimanche","Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi"];
+const DAYS_SHORT = ["Dim","Lun","Mar","Mer","Jeu","Ven","Sam"];
+
+function toast(msg, ms = 2400){
+  const t = $("#toast"); t.textContent = msg; t.classList.add("on");
+  clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove("on"), ms);
+}
+function vibrate(p){ try{ navigator.vibrate && navigator.vibrate(p); }catch(e){} }
+
+/* ============================================================
+   3) ETAT
+   ============================================================ */
+const DEFAULT_STATE = {
+  v: 1,
+  profile: { name:"", weight:60, waterGoal:2100, wake:"06:30", bed:"22:30",
+             lang:"fr", notif:false, pauseOn:true, height:165 },
+  schedule: { 0:{off:true,start:"08:00",end:"14:00"}, 1:{off:false,start:"08:00",end:"14:00"},
+              2:{off:false,start:"08:00",end:"14:00"}, 3:{off:false,start:"08:00",end:"14:00"},
+              4:{off:false,start:"08:00",end:"14:00"}, 5:{off:false,start:"08:00",end:"14:00"},
+              6:{off:false,start:"08:00",end:"14:00"} },
+  gardes: {},          // "2026-08-03": {start:"14:00", end:"08:00"}
+  days:   {},          // "2026-08-01": {...}
+  notes:  [],
+  fcmToken: null,
+  onboarded: false
+};
+let S = structuredClone(DEFAULT_STATE);
+let UID = null, MODE = "local";   // "local" | "cloud"
+let fb = null;                    // { db, auth, doc, setDoc, ... }
+
+const blankDay = () => ({
+  water:0, adds:[], meals:{}, pauses:0, mood:null, energy:null, note:"",
+  sleep:null, fired:[]
+});
+function day(k = activeKey()){
+  if(!S.days[k]) S.days[k] = blankDay();
+  return S.days[k];
+}
+
+/* ---- sauvegarde : tout part dans Firestore ----
+   Le SDK garde une copie chiffrée dans le navigateur (IndexedDB) pour que
+   l'app marche sans réseau ; dès que la connexion revient, il envoie tout. */
+let saveTimer = null;
+function save(){
+  if(!fb || !UID) return;
+  syncState("wait");
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(async () => {
+    try{
+      const t = structuredClone(S);
+      const keys = Object.keys(t.days).sort().slice(-180);   // on garde 6 mois
+      t.days = Object.fromEntries(keys.map(k => [k, t.days[k]]));
+      t.updatedAt = Date.now();
+      await fb.setDoc(fb.doc(fb.db, "users", UID), t);
+      syncState("ok");
+    }catch(e){ console.warn("save", e); syncState("err"); }
+  }, 700);
+}
+let SYNC = "ok";
+function syncState(s){
+  SYNC = s;
+  const el = $("#cloud-state"); if(!el) return;
+  const txt = { ok:"Tout est enregistré dans ton compte", wait:"Enregistrement…",
+                err:"Pas de réseau. Tout sera envoyé au retour de la connexion." }[s];
+  el.innerHTML = `<span class="dot-sync ${s === "ok" ? "" : "off"}"></span>${txt}`;
+}
+
+/* ============================================================
+   4) HORAIRES
+   ============================================================ */
+function shiftFor(k = activeKey()){
+  if(S.gardes[k]) return { off:false, garde:true, start:S.gardes[k].start, end:S.gardes[k].end };
+  const d = new Date(k + "T12:00:00").getDay();
+  const s = S.schedule[d] || { off:true };
+  if(s.off) return { off:true, garde:false };
+  const garde = toMin(s.end) <= toMin(s.start);
+  return { off:false, garde, start:s.start, end:s.end };
+}
+function shiftLabel(sh){
+  if(sh.off) return "Repos 🌿";
+  return (sh.garde ? "Garde " : "Travail ") + sh.start.replace(":","h") + " → " + sh.end.replace(":","h");
+}
+/** La "journée de service" : si une garde commencée hier tourne encore, on reste dessus. */
+function activeKey(){
+  const y = new Date(); y.setDate(y.getDate() - 1);
+  const yk = keyOf(y), sh = shiftFor(yk);
+  if(!sh.off && sh.garde && nowMin() < toMin(sh.end)) return yk;
+  return todayKey();
+}
+function isGardeToday(){ return shiftFor(activeKey()).garde; }
+
+/* ============================================================
+   5) RAPPELS INTELLIGENTS
+   ============================================================ */
+const MEALS_DAY = [
+  { id:"bd",   emoji:"🥣", label:"Petit-déjeuner" },
+  { id:"dej",  emoji:"🍽️", label:"Déjeuner" },
+  { id:"gout", emoji:"🍎", label:"Goûter" },
+  { id:"din",  emoji:"🌙", label:"Dîner" }
+];
+const MEALS_GARDE = [
+  { id:"din",  emoji:"🍽️", label:"Repas du soir" },
+  { id:"nuit", emoji:"🌙", label:"Collation de nuit" },
+  { id:"aube", emoji:"🌅", label:"Repas d'aube" },
+  { id:"bd",   emoji:"🥣", label:"Petit-déjeuner après garde" }
+];
+const mealsToday = () => isGardeToday() ? MEALS_GARDE : MEALS_DAY;
+
+function mealTimes(){
+  const sh = shiftFor();
+  if(sh.garde) return { din:"22:00", nuit:"02:00", aube:"06:00", bd:"09:00" };
+  const wake = toMin(S.profile.wake);
+  return { bd: toHM(wake + 30), dej:"11:45", gout:"16:00", din:"20:00" };
+}
+
+function waterTimes(){
+  const sh = shiftFor();
+  const goal = S.profile.waterGoal;
+  const n = clamp(Math.round(goal / 280), 5, 10);
+  let start, span;
+  if(sh.garde){ start = toMin(sh.start); span = 18 * 60; }
+  else {
+    start = toMin(S.profile.wake) + 45;
+    const end = toMin(S.profile.bed) - 90;
+    span = Math.max(360, end - start);
+  }
+  const step = Math.round(span / (n - 1) / 15) * 15;
+  return Array.from({length:n}, (_, i) => toHM(start + i * step));
+}
+
+function pauseTimes(){
+  const sh = shiftFor();
+  if(sh.off || !S.profile.pauseOn) return [];
+  const a = toMin(sh.start), bRaw = toMin(sh.end);
+  const b = bRaw <= a ? bRaw + 1440 : bRaw;
+  const out = [];
+  for(let t = a + 120; t < b - 30; t += 120) out.push(toHM(t));
+  return out;
+}
+
+const TXT = {
+  fr:{ eau:["💧 Un verre d'eau","Bois maintenant, tu te sentiras mieux."],
+       repas:m=>["🍽️ "+m,"C'est le moment de manger. Assieds-toi 10 minutes."],
+       pause:["🧘 Pause de 2 minutes","Respire. Le service tiendra deux minutes sans toi."],
+       mood:["💗 Comment s'est passée ta journée ?","Une minute pour noter ton humeur."],
+       sleep:["🌙 Il est l'heure de dormir","Demain commence tôt. Repose-toi."] },
+  tn:{ eau:["💧 Chrab may","Kass may tawa, bech t7ess ro7ek a7ssen."],
+       repas:m=>["🍽️ "+m,"Wa9t el makla. O93od 3achra d9aye9 barka."],
+       pause:["🧘 Pause 2 d9aye9","Tanaffsi chwaya. El service bech yestanna fik."],
+       mood:["💗 Kifeh kenet nharek ?","D9i9a barka bech tsajel el mood mte3ek."],
+       sleep:["🌙 Wa9t el n3as","8odwa bekri. Erte7i."] }
+};
+const L = () => TXT[S.profile.lang] || TXT.fr;
+
+/** Tous les rappels d'aujourd'hui, triés par heure */
+function remindersToday(){
+  const out = [];
+  waterTimes().forEach((t, i) => {
+    const [title, body] = L().eau;
+    out.push({ id:"eau"+i, type:"eau", at:t, title, body, page:"p-water" });
+  });
+  const mt = mealTimes();
+  mealsToday().forEach(m => {
+    const [title, body] = L().repas(m.label);
+    out.push({ id:"repas-"+m.id, type:"repas", at:mt[m.id] || "12:00", title, body, page:"p-meals", meal:m.id });
+  });
+  pauseTimes().forEach((t, i) => {
+    const [title, body] = L().pause;
+    out.push({ id:"pause"+i, type:"pause", at:t, title, body, page:"p-home" });
+  });
+  const [mt1, mb1] = L().mood;
+  out.push({ id:"mood", type:"mood", at: isGardeToday() ? "21:00" : "21:30", title:mt1, body:mb1, page:"p-mood" });
+  if(!isGardeToday()){
+    const [st1, sb1] = L().sleep;
+    out.push({ id:"sleep", type:"sleep", at: toHM(toMin(S.profile.bed) - 20), title:st1, body:sb1, page:"p-sleep" });
+  }
+  return out.sort((a,b) => toMin(a.at) - toMin(b.at));
+}
+
+function isDone(r){
+  const d = day();
+  if(r.type === "eau"){
+    const idx = Number(r.id.replace("eau","")); const times = waterTimes();
+    const target = Math.round(S.profile.waterGoal * (idx + 1) / times.length);
+    return d.water >= target;
+  }
+  if(r.type === "repas") return !!d.meals[r.meal];
+  if(r.type === "pause"){ const idx = Number(r.id.replace("pause","")); return d.pauses > idx; }
+  if(r.type === "mood")  return d.mood != null;
+  if(r.type === "sleep") return !!d.sleep;
+  return false;
+}
+
+/* ============================================================
+   6) PROGRESSION
+   ============================================================ */
+function progress(k = activeKey()){
+  const d = S.days[k] || blankDay();
+  const sh = shiftFor(k);
+  const meals = (k === activeKey() ? mealsToday() : MEALS_DAY);
+  const eau   = clamp(d.water / (S.profile.waterGoal || 2000), 0, 1);
+  const rep   = meals.filter(m => d.meals[m.id]).length / meals.length;
+  const nP    = sh.off ? 2 : Math.max(1, pauseTimes().length);
+  const pau   = clamp(d.pauses / nP, 0, 1);
+  const moo   = d.mood != null ? 1 : 0;
+  const total = eau*0.40 + rep*0.30 + pau*0.20 + moo*0.10;
+  return { eau, rep, pau, moo, total, pct: Math.round(total*100) };
+}
+function streak(){
+  let n = 0; const d = new Date();
+  for(let i = 0; i < 400; i++){
+    const k = keyOf(d);
+    if(!S.days[k]) { if(i > 0) break; d.setDate(d.getDate()-1); continue; }
+    if(progress(k).total >= 0.7) n++; else if(i > 0) break;
+    d.setDate(d.getDate()-1);
+  }
+  return n;
+}
+
+/* ============================================================
+   7) L'ANNEAU DE GARDE  (élément signature)
+   ============================================================ */
+const POL = (cx, cy, r, deg) => {
+  const a = (deg - 90) * Math.PI / 180;
+  return [cx + r*Math.cos(a), cy + r*Math.sin(a)];
+};
+const arc = (cx, cy, r, d1, d2) => {
+  if(d2 - d1 >= 359.99) d2 = d1 + 359.99;
+  const [x1,y1] = POL(cx,cy,r,d1), [x2,y2] = POL(cx,cy,r,d2);
+  return `M${x1.toFixed(2)} ${y1.toFixed(2)} A${r} ${r} 0 ${d2-d1>180?1:0} 1 ${x2.toFixed(2)} ${y2.toFixed(2)}`;
+};
+const degOf = min => (((min % 1440) + 1440) % 1440) / 1440 * 360;
+
+function drawDial(){
+  const C = 120, R = 100, Ri = 76;
+  const sh = shiftFor(), p = progress(), rems = remindersToday(), now = nowMin();
+  let g = "";
+
+  g += `<circle class="track" cx="${C}" cy="${C}" r="${R}"/>`;
+  if(!sh.off){
+    const a = degOf(toMin(sh.start));
+    let b = degOf(toMin(sh.end)); if(b <= a) b += 360;
+    g += `<path class="shift" d="${arc(C,C,R,a,b)}"/>`;
+  }
+  for(let h = 0; h < 24; h += 2){
+    const [x1,y1] = POL(C,C,R+10,degOf(h*60)), [x2,y2] = POL(C,C,R+(h%6===0?16:13),degOf(h*60));
+    g += `<line class="tick" x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}"/>`;
+  }
+  [0,6,12,18].forEach(h => {
+    const [x,y] = POL(C,C,R+25,degOf(h*60));
+    g += `<text class="hour" x="${x.toFixed(1)}" y="${(y+3).toFixed(1)}">${pad(h)}h</text>`;
+  });
+
+  g += `<path class="prog" d="${arc(C,C,Ri,0,Math.max(0.1,p.total*359.9))}"/>`;
+
+  rems.filter(r => r.type !== "sleep").forEach(r => {
+    const m = toMin(r.at), done = isDone(r);
+    const cls = done ? "done" : (m <= now ? "late" : "todo");
+    const [x,y] = POL(C,C,R,degOf(m));
+    const ico = { eau:"💧", repas:"🍽️", pause:"🧘", mood:"💗" }[r.type] || "•";
+    g += `<g class="dot ${cls}" data-page="${r.page}" data-t="${r.at}"><circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="7"/>
+      <title>${ico} ${r.at} — ${done ? "fait" : "à faire"}</title></g>`;
+  });
+
+  const [nx,ny] = POL(C,C,R-20,degOf(now));
+  g += `<line class="needle" x1="${C}" y1="${C}" x2="${nx.toFixed(1)}" y2="${ny.toFixed(1)}"/>`;
+  g += `<circle cx="${C}" cy="${C}" r="3.5" fill="var(--head)"/>`;
+
+  $("#dial").innerHTML = g;
+  $("#dial-pct").textContent = p.pct + "%";
+  $$("#dial .dot").forEach(el => el.addEventListener("click", () => go(el.dataset.page)));
+}
+
+/* ============================================================
+   8) NAVIGATION
+   ============================================================ */
+function go(id){
+  $$(".page").forEach(p => p.classList.toggle("on", p.id === id));
+  $$("nav button").forEach(b => b.classList.toggle("on", b.dataset.go === id));
+  window.scrollTo({ top:0, behavior:"instant" });
+  render(id);
+}
+$$("nav button, [data-go]").forEach(b => b.dataset.go && b.addEventListener("click", () => go(b.dataset.go)));
+
+/* ============================================================
+   9) RENDU
+   ============================================================ */
+const QUOTES = [
+  ["Tu aides des personnes chaque jour. N'oublie pas de prendre soin de toi.", "Enti t3awen f nes kol nhar. Ma tensech ro7ek."],
+  ["Un verre d'eau maintenant vaut mieux qu'une migraine à 16h.", "Kass may tawa 5ir men wje3 ras fel 3chiya."],
+  ["Tu n'es pas une machine. Les pauses font partie du travail.", "Enti mouch machine. El pause hiya zeda men el khedma."],
+  ["Ton calme est un soin. Garde-en un peu pour toi.", "El hdou mte3ek dwe. Khalli chwaya lik enti."],
+  ["Manger à l'heure, c'est aussi soigner quelqu'un : toi.", "Kif tekel f wa9tek, enti t3alej wa7da : ro7ek."],
+  ["Personne ne te remerciera d'avoir sauté le déjeuner. Assieds-toi.", "7ad ma bech ya3tik chokran 3ala li ma keltech. O93od."],
+  ["Fatiguée n'est pas faible. C'est humain.", "Ta3ba mouch d3ifa. Hedhi tabi3a."],
+  ["Six heures debout, deux minutes assise. C'est le minimum.", "Sett se3at wa9fa, d9i9tin 9a3da. Hedha a9al chay."]
+];
+const DHIKR = [
+  ["سُبْحَانَ اللهِ وَبِحَمْدِهِ", "Subhan Allahi wa bihamdih", "33 fois — le cœur se calme."],
+  ["لَا حَوْلَ وَلَا قُوَّةَ إِلَّا بِاللهِ", "La hawla wa la quwwata illa billah", "Quand la fatigue pèse."],
+  ["اللَّهُمَّ أَعِنِّي عَلَى ذِكْرِكَ وَشُكْرِكَ وَحُسْنِ عِبَادَتِكَ", "Allahumma a'inni 'ala dhikrika wa shukrika wa husni 'ibadatik", "Après la prière."],
+  ["حَسْبُنَا اللهُ وَنِعْمَ الْوَكِيلُ", "Hasbuna Allahu wa ni'ma al-wakil", "Avant une garde difficile."],
+  ["رَبِّ اشْرَحْ لِي صَدْرِي وَيَسِّرْ لِي أَمْرِي", "Rabbi ishrah li sadri wa yassir li amri", "Avant d'entrer au service."]
+];
+
+function renderHome(){
+  const p  = profile(), d = day(), pr = progress(), sh = shiftFor();
+  const h  = new Date().getHours();
+  const hi = h < 12 ? "Bonjour" : h < 18 ? "Bon après-midi" : "Bonsoir";
+  $("#greet").textContent = `${hi} ${p.name || ""} 🌸`.trim();
+  $("#today-line").textContent = new Date().toLocaleDateString("fr-FR",
+    { weekday:"long", day:"numeric", month:"long" });
+  $("#shift-chip").textContent = shiftLabel(sh);
+
+  const meals = mealsToday();
+  const mDone = meals.filter(m => d.meals[m.id]).length;
+  const nP = sh.off ? 2 : Math.max(1, pauseTimes().length);
+  const tiles = [
+    { ico:"💧", t:"Eau",    v:`${d.water} / ${p.waterGoal}`, ok:pr.eau >= 1,  go:"p-water" },
+    { ico:"🍽️", t:"Repas",  v:`${mDone}/${meals.length}`,     ok:pr.rep >= 1,  go:"p-meals" },
+    { ico:"🚶", t:"Pause",  v:`${d.pauses}/${nP}`,            ok:pr.pau >= 1,  go:"p-home" },
+    { ico:"😊", t:"Humeur", v:d.mood ? "✓" : "—",             ok:pr.moo >= 1,  go:"p-mood" }
+  ];
+  $("#home-tiles").innerHTML = tiles.map(t =>
+    `<button class="tile ${t.ok?"ok":""}" data-go="${t.go}"><div class="ico">${t.ico}</div>
+      <div class="t">${t.t}</div><div class="v">${t.v}</div></button>`).join("");
+  $$("#home-tiles .tile").forEach(b => b.addEventListener("click", () => {
+    if(b.dataset.go === "p-home") addPause(); else go(b.dataset.go);
+  }));
+
+  const q = QUOTES[new Date().getDate() % QUOTES.length];
+  $("#q-fr").textContent = q[0];
+  $("#q-tn").textContent = "— " + q[1];
+
+  const until = t => ((toMin(t) - nowMin()) + 1440) % 1440;
+  const next = remindersToday().filter(r => !isDone(r)).sort((a,b) => until(a.at) - until(b.at))[0];
+  $("#next-rem").textContent = next
+    ? `${next.at} · ${next.title.replace(/^[^\s]+\s/, "")}`
+    : "Rien de prévu, profite 🌿";
+  $("#streak-box").textContent = "🔥 " + streak() + " j";
+  drawDial();
+}
+
+function profile(){ return S.profile; }
+
+function renderWater(){
+  const d = day(), p = profile(), pct = clamp(d.water / p.waterGoal * 100, 0, 100);
+  $("#w-fill").style.height = pct + "%";
+  $("#w-val").textContent = d.water;
+  $("#w-of").textContent  = "ml sur " + p.waterGoal;
+  $("#w-goal-line").textContent = `35 ml × ${p.weight} kg = ${p.waterGoal} ml`;
+  const left = Math.max(0, p.waterGoal - d.water);
+  $("#w-left").textContent = left ? `Reste ${left} ml` : "Objectif atteint 🎉";
+  barChart("#w-chart", last(7).map(k => ({
+    label: DAYS_SHORT[new Date(k+"T12:00:00").getDay()],
+    value: Math.round(clamp((S.days[k]?.water || 0) / p.waterGoal, 0, 1) * 100)
+  })), "%");
+}
+
+function renderMeals(){
+  const d = day(), meals = mealsToday(), mt = mealTimes();
+  $("#m-mode").textContent = isGardeToday() ? "Rythme de garde 🌗" : "Rythme de jour ☀️";
+  $("#m-count").textContent = meals.filter(m => d.meals[m.id]).length + "/" + meals.length;
+  $("#meal-list").innerHTML = meals.map(m => `
+    <div class="item"><div style="font-size:22px">${m.emoji}</div>
+      <div class="name"><b>${m.label}</b><span>vers ${mt[m.id] || "—"}</span></div>
+      <button class="check ${d.meals[m.id] ? "on" : ""}" data-meal="${m.id}">✓</button></div>`).join("");
+  $$("#meal-list .check").forEach(b => b.addEventListener("click", () => {
+    const id = b.dataset.meal; d.meals[id] = !d.meals[id];
+    vibrate(18); save(); renderMeals(); if(d.meals[id]) toast("Bien joué 🌸");
+  }));
+  $("#m-hist").innerHTML = last(7).map(k => {
+    const dd = S.days[k] || blankDay();
+    const n = MEALS_DAY.filter(m => dd.meals[m.id]).length + (dd.meals.nuit?1:0) + (dd.meals.aube?1:0);
+    return `<div title="${k}">${n >= 3 ? "✅" : n >= 1 ? "🟡" : "⬜"}</div>`;
+  }).join("");
+}
+
+function renderMood(){
+  const d = day();
+  $$("#mood-row .mood").forEach(b => b.classList.toggle("on", Number(b.dataset.m) === d.mood));
+  $("#en-range").value = d.energy || 5;
+  $("#en-val").textContent = d.energy || 5;
+  $("#mood-note").value = d.note || "";
+  lineChart("#mood-chart", last(7).map(k => ({
+    label: DAYS_SHORT[new Date(k+"T12:00:00").getDay()],
+    value: S.days[k]?.mood || 0
+  })), 5);
+}
+
+function renderSleep(){
+  const d = day();
+  $("#sl-mode").textContent = isGardeToday()
+    ? "Mode garde : récupère dès que tu rentres" : "Nuit normale";
+  if(d.sleep){ $("#sl-bed").value = d.sleep.bed; $("#sl-wake").value = d.sleep.wake;
+    $("#sl-dur").textContent = fmtDur(d.sleep.dur); }
+  else { $("#sl-bed").value = S.profile.bed; $("#sl-wake").value = S.profile.wake; $("#sl-dur").textContent = "—"; }
+  const avg = avgSleep(7);
+  $("#sl-tip").textContent = avg
+    ? (avg < 390 ? "Tu dors moins de 6h30 en moyenne. Essaie d'avancer le coucher de 30 minutes."
+                 : "Ta moyenne est correcte. Continue comme ça 🌿")
+    : "Note tes nuits pendant quelques jours pour voir ta moyenne.";
+  barChart("#sl-chart", last(7).map(k => ({
+    label: DAYS_SHORT[new Date(k+"T12:00:00").getDay()],
+    value: Math.round((S.days[k]?.sleep?.dur || 0) / 60 * 10) / 10
+  })), "h");
+}
+
+function renderStats(){
+  const ks = last(7), p = profile();
+  const wa = avg(ks.map(k => clamp((S.days[k]?.water||0)/p.waterGoal,0,1))) * 100;
+  const me = avg(ks.map(k => {
+    const dd = S.days[k]; if(!dd) return 0;
+    return MEALS_DAY.filter(m => dd.meals[m.id]).length / 4;
+  })) * 100;
+  const sl = avgSleep(7);
+  const en = avg(ks.map(k => S.days[k]?.energy || 0).filter(Boolean));
+  $("#st-range").textContent = new Date(ks[0]+"T12:00:00").toLocaleDateString("fr-FR",{day:"numeric",month:"short"})
+    + " → " + new Date().toLocaleDateString("fr-FR",{day:"numeric",month:"short"});
+  $("#st-water").textContent = Math.round(wa) + "%"; $("#st-water-b").style.width = wa + "%";
+  $("#st-meals").textContent = Math.round(me) + "%"; $("#st-meals-b").style.width = me + "%";
+  $("#st-sleep").textContent = sl ? fmtDur(sl) : "—";
+  $("#st-energy").textContent = en ? (Math.round(en*10)/10) : "—";
+  barChart("#st-chart", last(14).map(k => ({
+    label: new Date(k+"T12:00:00").getDate(),
+    value: progress(k).pct
+  })), "%");
+  const bits = [];
+  if(wa < 70) bits.push("Ton point faible cette semaine, c'est l'eau. Mets un verre plein en évidence au poste.");
+  else bits.push("Ton hydratation tient bien la route 💧");
+  if(me < 70) bits.push("Tu sautes encore des repas. Le déjeuner de 11h45 est celui qui saute le plus souvent.");
+  if(sl && sl < 390) bits.push("Tes nuits sont courtes. Après une garde, une sieste de 90 minutes vaut mieux que 30.");
+  if(en && en < 5) bits.push("Ton énergie est basse. Parles-en si ça dure plus de deux semaines.");
+  $("#st-insight").innerHTML = bits.map(b => "· " + b).join("<br>");
+}
+
+function renderNotes(){
+  const l = S.notes;
+  $("#n-count").textContent = l.filter(n => !n.done).length;
+  $("#n-list").innerHTML = l.length ? l.map((n,i) => `
+    <div class="note-item ${n.done?"done":""}">
+      <button class="check ${n.done?"on":""}" data-i="${i}">✓</button>
+      <div class="txt">${escapeHtml(n.text)}</div>
+      <button class="del" data-del="${i}">✕</button></div>`).join("")
+    : `<div class="empty">Rien pour l'instant.<br>Ajoute ce que tu ne veux pas oublier.</div>`;
+  $$("#n-list .check").forEach(b => b.addEventListener("click", () => {
+    l[b.dataset.i].done = !l[b.dataset.i].done; save(); renderNotes();
+  }));
+  $$("#n-list .del").forEach(b => b.addEventListener("click", () => {
+    l.splice(b.dataset.del, 1); save(); renderNotes();
+  }));
+}
+
+function renderSched(){
+  $("#sched-list").innerHTML = [1,2,3,4,5,6,0].map(i => {
+    const s = S.schedule[i];
+    return `<div class="day"><b>${DAYS_FR[i]}</b>
+      <div class="h" ${s.off?'style="opacity:.35;pointer-events:none"':""}>
+        <input type="time" value="${s.start}" data-d="${i}" data-f="start">
+        <input type="time" value="${s.end}" data-d="${i}" data-f="end"></div>
+      <div class="sw ${s.off?"":"on"}" data-off="${i}"></div></div>`;
+  }).join("");
+  $$("#sched-list input").forEach(inp => inp.addEventListener("change", () => {
+    S.schedule[inp.dataset.d][inp.dataset.f] = inp.value; save(); renderSched(); toast("Horaire mis à jour");
+  }));
+  $$("#sched-list .sw").forEach(sw => sw.addEventListener("click", () => {
+    const i = sw.dataset.off; S.schedule[i].off = !S.schedule[i].off; save(); renderSched();
+  }));
+  const gs = Object.entries(S.gardes).sort();
+  $("#g-list").innerHTML = gs.length ? gs.map(([k,g]) => `
+    <div class="item"><div class="name"><b>${new Date(k+"T12:00:00").toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long"})}</b>
+      <span>${g.start} → ${g.end} le lendemain</span></div>
+      <button class="del" data-g="${k}">✕</button></div>`).join("")
+    : `<div class="empty">Aucune garde enregistrée.</div>`;
+  $$("#g-list .del").forEach(b => b.addEventListener("click", () => {
+    delete S.gardes[b.dataset.g]; save(); renderSched(); renderHome();
+  }));
+}
+
+function renderSet(){
+  const p = profile();
+  $("#s-name").value = p.name; $("#s-weight").value = p.weight;
+  $("#s-goal").value = p.waterGoal; $("#s-wake").value = p.wake; $("#s-bed").value = p.bed;
+  $("#sw-notif").classList.toggle("on", p.notif);
+  $("#sw-pause").classList.toggle("on", p.pauseOn);
+  $$("[data-lang]").forEach(b => b.classList.toggle("on", b.dataset.lang === p.lang));
+  $("#notif-state").textContent = ("Notification" in window)
+    ? (Notification.permission === "granted" ? "Autorisées sur cet appareil"
+      : Notification.permission === "denied" ? "Bloquées — change-le dans les réglages du navigateur"
+      : "Pas encore autorisées")
+    : "Non disponibles sur ce navigateur";
+  $("#set-account").textContent = fb?.auth?.currentUser?.email || "Compte";
+  syncState(SYNC);
+  $("#rem-preview").innerHTML = "<b>Rappels d'aujourd'hui</b><br>" +
+    remindersToday().map(r => `${r.at} · ${r.title}`).join("<br>");
+}
+
+function renderTools(){
+  const calc = () => {
+    const v = +$("#t-vol").value || 0, h = +$("#t-dur").value || 1;
+    const d = +($(".pill.on[data-d]")?.dataset.d || 20);
+    const mlh = v / h;
+    $("#t-mlh").textContent = Math.round(mlh) + " ml/h";
+    $("#t-gtt").textContent = Math.round(mlh * d / 60) + " gtt/min";
+  };
+  const imc = () => {
+    const kg = +$("#t-kg").value || 0, cm = +$("#t-cm").value || 0;
+    if(!kg || !cm){ $("#t-imc").textContent = "—"; return; }
+    const v = kg / Math.pow(cm/100, 2);
+    $("#t-imc").textContent = (Math.round(v*10)/10);
+    $("#t-imc-lbl").textContent = v < 18.5 ? "Insuffisance pondérale" : v < 25 ? "Corpulence normale"
+      : v < 30 ? "Surpoids" : "Obésité";
+  };
+  if(!$("#t-kg").value) $("#t-kg").value = profile().weight;
+  ["#t-vol","#t-dur"].forEach(s => $(s).oninput = calc);
+  ["#t-kg","#t-cm"].forEach(s => $(s).oninput = imc);
+  $$("#t-drops .pill").forEach(b => b.onclick = () => {
+    $$("#t-drops .pill").forEach(x => x.classList.remove("on")); b.classList.add("on"); calc();
+  });
+  calc(); imc();
+}
+
+function render(id){
+  ({ "p-home":renderHome, "p-water":renderWater, "p-meals":renderMeals, "p-mood":renderMood,
+     "p-sleep":renderSleep, "p-stats":renderStats, "p-notes":renderNotes, "p-sched":renderSched,
+     "p-set":renderSet, "p-tools":renderTools, "p-relax":renderRelax, "p-more":renderMore
+   }[id] || (()=>{}))();
+}
+function renderMore(){ $("#garde-state").textContent = isGardeToday() ? "Actif aujourd'hui" : "Désactivé"; }
+function renderRelax(){ showDhikr(); }
+
+/* ---- helpers ---- */
+function last(n){
+  const out = []; const d = new Date();
+  for(let i = n-1; i >= 0; i--){ const x = new Date(d); x.setDate(d.getDate()-i); out.push(keyOf(x)); }
+  return out;
+}
+const avg = a => a.length ? a.reduce((x,y)=>x+y,0)/a.length : 0;
+function avgSleep(n){
+  const v = last(n).map(k => S.days[k]?.sleep?.dur).filter(Boolean);
+  return v.length ? Math.round(avg(v)) : 0;
+}
+const fmtDur = m => `${Math.floor(m/60)}h${pad(m%60)}`;
+const escapeHtml = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function barChart(sel, data, unit){
+  const el = $(sel); const W = 320, H = 120, max = Math.max(1, ...data.map(d => d.value));
+  const bw = W / data.length * 0.56, gap = W / data.length;
+  let g = `<line class="gl" x1="0" y1="${H-18}" x2="${W}" y2="${H-18}"/>`;
+  const dense = data.length > 8;
+  data.forEach((d,i) => {
+    const h = Math.max(2, (d.value / max) * (H - 42));
+    const x = i*gap + (gap-bw)/2;
+    g += `<rect class="bar" x="${x.toFixed(1)}" y="${(H-18-h).toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" rx="4"/>`;
+    if(!dense || i % 2 === 0)
+      g += `<text x="${(x+bw/2).toFixed(1)}" y="${H-5}" text-anchor="middle">${d.label}</text>`;
+    if(!dense)
+      g += `<text x="${(x+bw/2).toFixed(1)}" y="${(H-24-h).toFixed(1)}" text-anchor="middle">${d.value||""}</text>`;
+  });
+  el.setAttribute("viewBox", `0 0 ${W} ${H}`); el.innerHTML = g;
+}
+function lineChart(sel, data, max){
+  const el = $(sel); const W = 320, H = 120;
+  const gap = W / Math.max(1, data.length - 1);
+  const pts = data.map((d,i) => [i*gap, H-24 - (clamp(d.value,0,max)/max)*(H-46)]);
+  let g = `<line class="gl" x1="0" y1="${H-20}" x2="${W}" y2="${H-20}"/>`;
+  g += `<path class="ln" d="${pts.map((p,i)=>(i?"L":"M")+p[0].toFixed(1)+" "+p[1].toFixed(1)).join(" ")}"/>`;
+  data.forEach((d,i) => {
+    if(d.value) g += `<circle cx="${pts[i][0].toFixed(1)}" cy="${pts[i][1].toFixed(1)}" r="4" fill="var(--accent)"/>`;
+    g += `<text x="${pts[i][0].toFixed(1)}" y="${H-6}" text-anchor="middle">${d.label}</text>`;
+  });
+  el.setAttribute("viewBox", `-8 0 ${W+16} ${H}`); el.innerHTML = g;
+}
+
+/* ============================================================
+   10) ACTIONS
+   ============================================================ */
+$$("[data-add]").forEach(b => b.addEventListener("click", () => {
+  const d = day(), n = +b.dataset.add;
+  d.water += n; d.adds.push(n); vibrate(15);
+  const was = d.water - n < S.profile.waterGoal;
+  save(); renderWater();
+  if(was && d.water >= S.profile.waterGoal){ toast("🎉 Bravo, objectif atteint !"); vibrate([30,60,30]); }
+  else toast(`+${n} ml`);
+}));
+$("#w-undo").addEventListener("click", () => {
+  const d = day(); if(!d.adds.length) return toast("Rien à annuler");
+  d.water = Math.max(0, d.water - d.adds.pop()); save(); renderWater();
+});
+
+function addPause(){
+  const d = day(); d.pauses++; save(); vibrate(20);
+  toast("Pause notée. Respire 🌿"); go("p-relax"); startBreath(120);
+}
+$("#btn-pause").addEventListener("click", addPause);
+
+$$("#mood-row .mood").forEach(b => b.addEventListener("click", () => {
+  day().mood = Number(b.dataset.m); save(); renderMood(); vibrate(15);
+}));
+$("#en-range").addEventListener("input", e => $("#en-val").textContent = e.target.value);
+$("#mood-save").addEventListener("click", () => {
+  const d = day();
+  if(d.mood == null) return toast("Choisis d'abord un visage");
+  d.energy = +$("#en-range").value; d.note = $("#mood-note").value.trim();
+  save(); toast("Enregistré 💗"); renderMood();
+});
+
+$("#sl-save").addEventListener("click", () => {
+  const bed = $("#sl-bed").value, wk = $("#sl-wake").value;
+  if(!bed || !wk) return toast("Remplis les deux heures");
+  let dur = toMin(wk) - toMin(bed); if(dur <= 0) dur += 1440;
+  day().sleep = { bed, wake:wk, dur }; save(); renderSleep(); toast("Nuit enregistrée : " + fmtDur(dur));
+});
+
+$("#n-add").addEventListener("click", addNote);
+$("#n-input").addEventListener("keydown", e => e.key === "Enter" && addNote());
+function addNote(){
+  const v = $("#n-input").value.trim(); if(!v) return;
+  S.notes.unshift({ text:v, done:false }); $("#n-input").value = ""; save(); renderNotes();
+}
+
+$("#preset-fixe").addEventListener("click", () => {
+  [1,2,3,4,5,6].forEach(i => S.schedule[i] = { off:false, start:"08:00", end:"14:00" });
+  S.schedule[0] = { off:true, start:"08:00", end:"14:00" };
+  save(); renderSched(); toast("Semaine type appliquée");
+});
+$("#preset-clear").addEventListener("click", () => {
+  [0,1,2,3,4,5,6].forEach(i => S.schedule[i].off = true); save(); renderSched();
+});
+$("#g-add").addEventListener("click", () => {
+  const dt = $("#g-date").value; if(!dt) return toast("Choisis une date");
+  S.gardes[dt] = { start:$("#g-start").value, end:$("#g-end").value };
+  save(); renderSched(); renderHome(); toast("Garde ajoutée. Les rappels s'adaptent.");
+});
+$("#btn-garde-tog").addEventListener("click", () => {
+  const k = todayKey();
+  if(S.gardes[k]){ delete S.gardes[k]; toast("Mode garde désactivé"); }
+  else { S.gardes[k] = { start:"14:00", end:"08:00" }; toast("Mode garde activé 🌗"); }
+  save(); applyTheme(); renderMore(); renderHome();
+});
+
+$("#s-save").addEventListener("click", () => {
+  const p = profile();
+  p.name = $("#s-name").value.trim() || p.name;
+  p.weight = +$("#s-weight").value || p.weight;
+  p.waterGoal = +$("#s-goal").value || Math.round(p.weight * 35 / 50) * 50;
+  p.wake = $("#s-wake").value || p.wake; p.bed = $("#s-bed").value || p.bed;
+  save(); renderSet(); toast("Profil enregistré");
+});
+$("#s-weight").addEventListener("input", e => {
+  const w = +e.target.value; if(w > 20) $("#s-goal").value = Math.round(w * 35 / 50) * 50;
+});
+$("#sw-pause").addEventListener("click", () => {
+  S.profile.pauseOn = !S.profile.pauseOn; save(); renderSet();
+});
+$$("[data-lang]").forEach(b => b.addEventListener("click", () => {
+  S.profile.lang = b.dataset.lang; save(); renderSet(); toast(b.dataset.lang === "tn" ? "Behy, bel tounsi 🌸" : "Messages en français");
+}));
+$("#btn-export").addEventListener("click", () => {
+  const blob = new Blob([JSON.stringify(S, null, 2)], { type:"application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = `nurse-yossr-${todayKey()}.json`; a.click();
+});
+$("#sheet .bd").addEventListener("click", () => $("#sheet").classList.remove("on"));
+
+/* ============================================================
+   11) NOTIFICATIONS
+   ============================================================ */
+let swReg = null;
+async function initSW(){
+  if(!("serviceWorker" in navigator)) return;
+  try{ swReg = await navigator.serviceWorker.register("sw.js", { scope:"./" }); }
+  catch(e){ console.warn("SW", e); }
+}
+async function askNotif(){
+  if(!("Notification" in window)) return toast("Ce navigateur ne gère pas les notifications");
+  const perm = await Notification.requestPermission();
+  S.profile.notif = perm === "granted"; save(); renderSet();
+  if(perm === "granted"){ toast("Notifications activées 🔔"); initFCM(); }
+  else toast("Autorise les notifications dans les réglages du navigateur");
+}
+$("#sw-notif").addEventListener("click", () => {
+  if(S.profile.notif && Notification.permission === "granted"){
+    S.profile.notif = false; save(); renderSet(); toast("Rappels en pause");
+  } else askNotif();
+});
+$("#btn-test-notif").addEventListener("click", () => fire({
+  title:"💧 Ceci est un test", body:"Si tu vois ça, les rappels fonctionnent 🌸", page:"p-home", id:"test"
+}, false));
+
+async function fire(r, mark = true){
+  if(!("Notification" in window) || Notification.permission !== "granted"){
+    toast(r.title); return;
+  }
+  const opts = { body:r.body, icon:"icons/icon-192.png", badge:"icons/icon-192.png",
+                 tag:r.id, vibrate:[60,40,60], data:{ page:r.page } };
+  try{
+    if(swReg) await swReg.showNotification(r.title, opts);
+    else new Notification(r.title, opts);
+  }catch(e){ toast(r.title); }
+  if(mark){ const d = day(); if(!d.fired.includes(r.id)){ d.fired.push(r.id); save(); } }
+}
+
+function tick(){
+  drawDialSafe();
+  if(!S.profile.notif) return;
+  const d = day(), now = nowMin();
+  for(const r of remindersToday()){
+    const t = toMin(r.at);
+    if(now >= t && now - t < 50 && !d.fired.includes(r.id) && !isDone(r)) fire(r);
+  }
+}
+function drawDialSafe(){ if($("#p-home").classList.contains("on")) drawDial(); }
+setInterval(tick, 30000);
+
+/* ---- Cloud Messaging (push depuis un serveur) ---- */
+async function initFCM(){
+  if(!FB_READY || !fb?.messaging || Notification.permission !== "granted") return;
+  try{
+    const reg = await navigator.serviceWorker.register("firebase-messaging-sw.js", { scope:"./fcm/" });
+    const token = await fb.getToken(fb.messaging, { vapidKey:VAPID_KEY, serviceWorkerRegistration:reg });
+    if(token && token !== S.fcmToken){ S.fcmToken = token; save(); }
+    fb.onMessage(fb.messaging, payload => {
+      const n = payload.notification || {};
+      toast((n.title || "Rappel") + " — " + (n.body || ""));
+    });
+  }catch(e){ console.warn("FCM", e); }
+}
+
+/* ============================================================
+   12) DETENTE : respiration + sons générés
+   ============================================================ */
+let breathTimer = null, breathEnd = 0, rxMin = 1;
+$$("[data-min]").forEach(b => b.addEventListener("click", () => {
+  $$("[data-min]").forEach(x => x.classList.remove("on")); b.classList.add("on");
+  rxMin = +b.dataset.min; $("#rx-timer").textContent = pad(rxMin) + ":00";
+}));
+$("#rx-start").addEventListener("click", () => breathTimer ? stopBreath() : startBreath(rxMin*60));
+
+function startBreath(sec){
+  go("p-relax"); breathEnd = Date.now() + sec*1000;
+  $("#rx-start").textContent = "Arrêter";
+  const orb = $("#orb"), txt = $("#orb-txt");
+  let phase = 0;
+  const cycle = () => {
+    const steps = [["Inspire", true, 4000], ["Retiens", true, 4000], ["Expire", false, 6000], ["Pause", false, 2000]];
+    const [label, big, ms] = steps[phase % 4];
+    txt.textContent = label; orb.classList.toggle("big", big);
+    phase++; breathTimer = setTimeout(cycle, ms);
+  };
+  cycle();
+  const count = () => {
+    const left = Math.max(0, Math.round((breathEnd - Date.now())/1000));
+    $("#rx-timer").textContent = pad(Math.floor(left/60)) + ":" + pad(left%60);
+    if(left <= 0){ stopBreath(); toast("C'est fini. Tu peux y retourner 🌸"); vibrate([40,60,40]); }
+    else breathTimer && (breathTimer._c = setTimeout(count, 1000));
+  };
+  count();
+}
+function stopBreath(){
+  clearTimeout(breathTimer); clearTimeout(breathTimer?._c); breathTimer = null;
+  $("#orb").classList.remove("big"); $("#orb-txt").textContent = "Prête ?";
+  $("#rx-start").textContent = "Commencer la respiration";
+  $("#rx-timer").textContent = pad(rxMin) + ":00";
+}
+
+let ac = null, node = null;
+function noise(type){
+  stopSound();
+  ac = ac || new (window.AudioContext || window.webkitAudioContext)();
+  const len = ac.sampleRate * 4, buf = ac.createBuffer(1, len, ac.sampleRate), dt = buf.getChannelData(0);
+  let last = 0;
+  for(let i = 0; i < len; i++){
+    const w = Math.random()*2 - 1;
+    last = (last + 0.02*w) / 1.02; dt[i] = last * 3.2;
+  }
+  const src = ac.createBufferSource(); src.buffer = buf; src.loop = true;
+  const flt = ac.createBiquadFilter(), gain = ac.createGain(), lfo = ac.createOscillator(), lg = ac.createGain();
+  if(type === "pluie"){ flt.type = "highpass"; flt.frequency.value = 900; gain.gain.value = .45; }
+  if(type === "mer")  { flt.type = "lowpass";  flt.frequency.value = 550; gain.gain.value = .5; }
+  if(type === "foret"){ flt.type = "bandpass"; flt.frequency.value = 700; flt.Q.value = .6; gain.gain.value = .55; }
+  lfo.frequency.value = type === "mer" ? 0.09 : 0.25; lg.gain.value = type === "mer" ? .28 : .1;
+  lfo.connect(lg); lg.connect(gain.gain);
+  src.connect(flt); flt.connect(gain); gain.connect(ac.destination);
+  src.start(); lfo.start();
+  node = { src, lfo, gain };
+}
+function stopSound(){
+  if(node){ try{ node.src.stop(); node.lfo.stop(); }catch(e){} node = null; }
+  $$(".sound").forEach(s => s.classList.remove("on"));
+}
+$$(".sound").forEach(b => b.addEventListener("click", () => {
+  const on = b.classList.contains("on"); stopSound();
+  if(!on){ noise(b.dataset.snd); b.classList.add("on"); }
+}));
+$("#snd-stop").addEventListener("click", stopSound);
+
+let dhikrI = 0;
+function showDhikr(){
+  const d = DHIKR[dhikrI % DHIKR.length];
+  $("#dhikr-box").innerHTML = `<div style="font-size:21px;line-height:1.9;direction:rtl;text-align:right;color:var(--head)">${d[0]}</div>
+    <div style="font-size:13px;color:var(--mute);margin-top:8px;font-style:italic">${d[1]}</div>
+    <div style="font-size:12.5px;color:var(--mute);margin-top:6px">${d[2]}</div>`;
+}
+$("#dhikr-next").addEventListener("click", () => { dhikrI++; showDhikr(); });
+
+/* ============================================================
+   13) THEME
+   ============================================================ */
+function applyTheme(){
+  const sh = shiftFor();
+  const g = isGardeToday() && (activeKey() !== todayKey() || nowMin() >= toMin(sh.start || "14:00"));
+  document.documentElement.dataset.mode = g ? "garde" : "jour";
+  document.querySelector('meta[name=theme-color]')?.setAttribute("content", g ? "#170F22" : "#FFF1F4");
+}
+
+/* ============================================================
+   14) ONBOARDING
+   ============================================================ */
+let step = 0;
+const ONB = [
+  { t:"Comment tu t'appelles ?", p:"C'est le nom que tu verras chaque matin.",
+    h:`<label class="f">Prénom</label><input class="in" id="o-name" placeholder="Yossr" autocomplete="given-name">` },
+  { t:"Ton poids", p:"Il sert à calculer ton objectif d'eau : 35 ml par kilo.",
+    h:`<label class="f">Poids (kg)</label><input class="in" type="number" id="o-weight" value="60" inputmode="decimal">
+       <div class="sub" id="o-goal" style="margin-top:10px"></div>` },
+  { t:"Tes horaires de sommeil", p:"Les rappels d'eau et de repas se calent dessus.",
+    h:`<div class="two"><div><label class="f">Réveil</label><input class="in" type="time" id="o-wake" value="06:30"></div>
+       <div><label class="f">Coucher</label><input class="in" type="time" id="o-bed" value="22:30"></div></div>` },
+  { t:"Ton rythme de travail", p:"Tu pourras le modifier à tout moment dans Horaires.",
+    h:`<div class="two"><div><label class="f">Début</label><input class="in" type="time" id="o-start" value="08:00"></div>
+       <div><label class="f">Fin</label><input class="in" type="time" id="o-end" value="14:00"></div></div>
+       <div class="sub" style="margin-top:12px">Lundi → Samedi, repos le dimanche.</div>` }
+];
+function drawOnb(){
+  const s = ONB[step];
+  $("#onb-body").innerHTML = `<h1>${s.t}</h1><p class="lead">${s.p}</p>${s.h}`;
+  $$("#gate-onb .steps i").forEach((i,n) => i.classList.toggle("on", n <= step));
+  $("#onb-back").classList.toggle("hidden", step === 0);
+  $("#onb-next").textContent = step === ONB.length - 1 ? "C'est parti 🌸" : "Continuer";
+  if(step === 1){
+    const upd = () => $("#o-goal").textContent =
+      `Objectif : ${Math.round((+$("#o-weight").value||60)*35/50)*50} ml par jour`;
+    $("#o-weight").oninput = upd; upd();
+  }
+}
+$("#onb-back").addEventListener("click", () => { if(step > 0){ step--; drawOnb(); } });
+$("#onb-next").addEventListener("click", () => {
+  const p = S.profile;
+  if(step === 0){ p.name = ($("#o-name").value || "Yossr").trim(); }
+  if(step === 1){ p.weight = +$("#o-weight").value || 60; p.waterGoal = Math.round(p.weight*35/50)*50; }
+  if(step === 2){ p.wake = $("#o-wake").value; p.bed = $("#o-bed").value; }
+  if(step === 3){
+    const a = $("#o-start").value, b = $("#o-end").value;
+    [1,2,3,4,5,6].forEach(i => S.schedule[i] = { off:false, start:a, end:b });
+    S.schedule[0] = { off:true, start:a, end:b };
+    S.onboarded = true; save(); enterApp();
+    setTimeout(() => { if(confirm("Activer les rappels (eau, repas, pause) ?")) askNotif(); }, 900);
+    return;
+  }
+  save(); step++; drawOnb();
+});
+
+/* ============================================================
+   15) AUTH + FIREBASE
+   ============================================================ */
+async function initFirebase(){
+  if(!FB_READY) return false;
+  try{
+    const [app, auth, store, msg] = await Promise.all([
+      import("https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js"),
+      import("https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js"),
+      import("https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js"),
+      import("https://www.gstatic.com/firebasejs/10.12.5/firebase-messaging.js").catch(() => null)
+    ]);
+    const a = app.initializeApp(FIREBASE_CONFIG);
+    let db;
+    try{
+      db = store.initializeFirestore(a, {
+        localCache: store.persistentLocalCache({ tabManager: store.persistentMultipleTabManager() })
+      });
+    }catch(e){ db = store.getFirestore(a); }
+    fb = {
+      auth: auth.getAuth(a), db,
+      signIn: auth.signInWithEmailAndPassword, signUp: auth.createUserWithEmailAndPassword,
+      onAuth: auth.onAuthStateChanged, signOut: auth.signOut, reset: auth.sendPasswordResetEmail,
+      doc: store.doc, getDoc: store.getDoc, setDoc: store.setDoc, onSnapshot: store.onSnapshot
+    };
+    if(msg && await msg.isSupported().catch(()=>false)){
+      fb.messaging = msg.getMessaging(a); fb.getToken = msg.getToken; fb.onMessage = msg.onMessage;
+    }
+    return true;
+  }catch(e){ console.warn("Firebase indisponible", e); return false; }
+}
+
+let unsub = null;
+async function pullCloud(uid){
+  const ref = fb.doc(fb.db, "users", uid);
+  try{
+    const snap = await fb.getDoc(ref);
+    if(snap.exists()) S = Object.assign(structuredClone(DEFAULT_STATE), snap.data());
+    else { S = structuredClone(DEFAULT_STATE); await fb.setDoc(ref, S); }
+    syncState("ok");
+  }catch(e){ console.warn("pull", e); syncState("err"); }
+
+  // si elle utilise l'app sur un autre appareil, les changements arrivent ici
+  if(unsub) unsub();
+  unsub = fb.onSnapshot(ref, s => {
+    if(!s.exists() || s.metadata.hasPendingWrites) return;
+    S = Object.assign(structuredClone(DEFAULT_STATE), s.data());
+    const cur = $$(".page.on")[0];
+    if(!$("#app").classList.contains("hidden") && cur) render(cur.id);
+  }, e => console.warn("snapshot", e));
+}
+
+let AU_MODE = "in";                      // "in" = connexion, "up" = inscription
+function setAuthMode(m){
+  AU_MODE = m;
+  $$(".tabs [data-tab]").forEach(b => b.classList.toggle("on", b.dataset.tab === m));
+  $("#up-only").classList.toggle("hidden", m === "in");
+  $("#au-go").textContent = m === "in" ? "Se connecter" : "Créer mon compte";
+  $("#au-forgot").classList.toggle("hidden", m === "up");
+  $("#au-pass").setAttribute("autocomplete", m === "in" ? "current-password" : "new-password");
+  say(m === "in"
+    ? "Tes données sont enregistrées dans ton compte. Tu les retrouves sur n'importe quel téléphone."
+    : "Un seul compte suffit. Retiens bien ton mot de passe 🌸");
+}
+function say(t, kind = ""){ const e = $("#au-msg"); e.textContent = t; e.className = "msg " + kind; }
+$$(".tabs [data-tab]").forEach(b => b.addEventListener("click", () => setAuthMode(b.dataset.tab)));
+$("#au-go").addEventListener("click", doAuth);
+$("#au-pass").addEventListener("keydown", e => e.key === "Enter" && doAuth());
+$("#au-pass2").addEventListener("keydown", e => e.key === "Enter" && doAuth());
+
+const AUTH_ERR = {
+  "auth/invalid-email":          "Cet email n'est pas valide.",
+  "auth/missing-password":       "Il manque le mot de passe.",
+  "auth/invalid-credential":     "Email ou mot de passe incorrect.",
+  "auth/wrong-password":         "Mot de passe incorrect.",
+  "auth/user-not-found":         "Aucun compte avec cet email. Passe par « Créer un compte ».",
+  "auth/email-already-in-use":   "Cet email a déjà un compte. Passe par « Se connecter ».",
+  "auth/weak-password":          "Mot de passe trop court : 6 caractères minimum.",
+  "auth/too-many-requests":      "Trop d'essais. Attends une minute et réessaie.",
+  "auth/network-request-failed": "Pas de connexion internet.",
+  "auth/unauthorized-domain":    "Ce domaine n'est pas autorisé dans Firebase (Authentication → Settings → Domaines autorisés)."
+};
+
+async function doAuth(){
+  const m = $("#au-mail").value.trim(), p = $("#au-pass").value;
+  if(!m.includes("@"))  return say("Écris ton adresse email.", "err");
+  if(p.length < 6)      return say("Le mot de passe fait 6 caractères minimum.", "err");
+  if(AU_MODE === "up" && p !== $("#au-pass2").value)
+    return say("Les deux mots de passe ne sont pas les mêmes.", "err");
+  if(!fb) return say("Firebase n'est pas configuré. Voir README.md.", "err");
+
+  $("#au-go").disabled = true;
+  say(AU_MODE === "in" ? "Connexion…" : "Création du compte…");
+  try{
+    const cred = AU_MODE === "in" ? await fb.signIn(fb.auth, m, p) : await fb.signUp(fb.auth, m, p);
+    UID = cred.user.uid; MODE = "cloud";
+    await pullCloud(UID); afterAuth(); initFCM();
+  }catch(e){
+    const c = e.code || "";
+    say(AUTH_ERR[c] || ("Impossible pour l'instant : " + (e.message || c)), "err");
+  }finally{ $("#au-go").disabled = false; }
+}
+
+$("#au-forgot").addEventListener("click", async () => {
+  const m = $("#au-mail").value.trim();
+  if(!m.includes("@")) return say("Écris d'abord ton email, puis retouche ce bouton.", "err");
+  if(!fb) return;
+  try{ await fb.reset(fb.auth, m); say("Email envoyé. Regarde ta boîte de réception 🌸", "ok"); }
+  catch(e){ say(AUTH_ERR[e.code] || "Envoi impossible pour l'instant.", "err"); }
+});
+
+$("#setup-retry").addEventListener("click", () => location.reload());
+
+$("#btn-logout").addEventListener("click", async () => {
+  if(!confirm("Se déconnecter ? Tes données restent dans ton compte.")) return;
+  if(unsub){ unsub(); unsub = null; }
+  if(fb && UID) await fb.signOut(fb.auth);
+  UID = null; S = structuredClone(DEFAULT_STATE);
+  $("#app").classList.add("hidden"); $("#gate-onb").classList.add("hidden");
+  $("#gate-auth").classList.remove("hidden"); setAuthMode("in");
+  $("#au-pass").value = ""; $("#au-pass2").value = "";
+});
+
+function afterAuth(){
+  if(S.onboarded) enterApp();
+  else { $("#gate-auth").classList.add("hidden"); $("#gate-onb").classList.remove("hidden"); step = 0; drawOnb(); }
+}
+function enterApp(){
+  $("#gate-auth").classList.add("hidden"); $("#gate-onb").classList.add("hidden");
+  $("#app").classList.remove("hidden");
+  applyTheme(); go("p-home"); tick();
+}
+
+/* ============================================================
+   16) INSTALLATION PWA
+   ============================================================ */
+let deferred = null;
+window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); deferred = e; });
+$("#btn-install").addEventListener("click", async () => {
+  if(deferred){ deferred.prompt(); deferred = null; }
+  else toast("Menu du navigateur → « Ajouter à l'écran d'accueil »");
+});
+
+/* ============================================================
+   17) DEMARRAGE
+   ============================================================ */
+function hideSplash(){
+  const s = $("#splash"); if(!s) return;
+  s.style.opacity = 0; setTimeout(() => s.remove(), 500);
+}
+(async function boot(){
+  initSW(); applyTheme();
+  const t0 = Date.now();
+  const ok = FB_READY && await initFirebase();
+  const wait = Math.max(0, 1100 - (Date.now() - t0));
+
+  if(!ok){
+    setTimeout(() => {
+      hideSplash(); $("#gate-setup").classList.remove("hidden");
+      if(FB_READY) $("#setup-msg").textContent =
+        "La configuration est là mais Firebase ne répond pas. Vérifie les valeurs et ta connexion.";
+    }, wait);
+    return;
+  }
+
+  let first = true;
+  fb.onAuth(fb.auth, async u => {
+    if(u){
+      UID = u.uid; MODE = "cloud";
+      await pullCloud(UID);
+      setTimeout(() => { hideSplash(); afterAuth(); initFCM(); }, first ? wait : 0);
+    } else {
+      UID = null;
+      setTimeout(() => { hideSplash(); $("#gate-auth").classList.remove("hidden"); setAuthMode("in"); },
+                 first ? wait : 0);
+    }
+    first = false;
+  });
+  document.addEventListener("visibilitychange", () => { if(!document.hidden){ applyTheme(); tick(); } });
+})();
+</script>
+
+</body>
+</html>
