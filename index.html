@@ -56,13 +56,13 @@ button{border:none;background:none;cursor:pointer}
 .hidden{display:none!important}
 
 /* ---------- app shell ---------- */
-#app{max-width:520px;margin:0 auto;min-height:100dvh;padding-top:var(--safe-t)}
-.page{display:none;padding:14px 18px calc(var(--nav-h) + 28px + var(--safe-b))}
+#app{max-width:520px;margin:0 auto;min-height:100dvh}
+.page{display:none;padding:16px 18px calc(48px + var(--safe-b))}
 .page.on{display:block;animation:rise .38s cubic-bezier(.2,.9,.2,1)}
 @keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 
 /* ---------- top bar ---------- */
-.topbar{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;padding:20px 4px 18px}
+.topbar{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;padding:4px 4px 16px}
 .topbar h1{font-size:26px;line-height:1.1}
 .topbar .date{font-size:12.5px;color:var(--mute);margin-top:4px}
 .chip{display:inline-flex;align-items:center;gap:6px;background:var(--accent-soft);color:var(--head);
@@ -186,15 +186,63 @@ svg.chart text{font-size:9px;fill:var(--mute);font-family:"Instrument Sans"}
 .sound.on{border-color:var(--accent);background:var(--accent-soft)}
 .sound .ico{display:block;font-size:20px;margin-bottom:5px}
 
-/* ---------- nav ---------- */
-nav{position:fixed;bottom:0;left:0;right:0;z-index:40;
-  background:color-mix(in srgb,var(--surface) 88%,transparent);backdrop-filter:blur(18px);
-  border-top:1px solid var(--border);padding-bottom:var(--safe-b)}
-nav .inner{max-width:520px;margin:0 auto;display:grid;grid-template-columns:repeat(5,1fr);height:var(--nav-h)}
-nav button{display:grid;place-items:center;gap:3px;font-size:10.5px;color:var(--mute);font-weight:600}
-nav button .ico{font-size:19px;line-height:1;transition:transform .25s}
-nav button.on{color:var(--accent)}
-nav button.on .ico{transform:translateY(-3px) scale(1.12)}
+/* ---------- en-tête fixe ---------- */
+#topbar{position:sticky;top:0;z-index:30;padding:calc(var(--safe-t) + 12px) 16px 0;
+  background:color-mix(in srgb,var(--bg) 90%,transparent);backdrop-filter:blur(18px);
+  border-bottom:1px solid var(--border)}
+.hd-row{display:flex;align-items:center;gap:11px;padding-bottom:12px}
+.hd-logo{width:42px;height:42px;border-radius:13px;flex:none;
+  box-shadow:0 8px 18px -10px rgba(142,31,66,.6)}
+.hd-txt{flex:1;min-width:0}
+.hd-txt b{display:block;font-family:"Bricolage Grotesque",sans-serif;font-weight:800;
+  font-size:16px;color:var(--head);line-height:1.15;letter-spacing:-.02em}
+.hd-txt span{font-size:12px;color:var(--mute);display:block;margin-top:1px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hd-act{display:flex;gap:8px;flex:none}
+.ic{width:38px;height:38px;border-radius:12px;background:var(--surface);border:1px solid var(--border);
+  display:grid;place-items:center;font-size:16px;position:relative;transition:transform .16s}
+.ic:active{transform:scale(.92)}
+.ic.ring{animation:ring 1.1s ease-in-out}
+@keyframes ring{0%,100%{transform:rotate(0)}20%{transform:rotate(-13deg)}40%{transform:rotate(11deg)}
+  60%{transform:rotate(-7deg)}80%{transform:rotate(5deg)}}
+#bell-badge{position:absolute;top:-5px;right:-5px;min-width:19px;height:19px;border-radius:10px;
+  background:var(--rose);color:#fff;font-size:10.5px;font-weight:700;display:none;place-items:center;
+  padding:0 5px;font-style:normal;border:2px solid var(--bg);line-height:1}
+#bell-badge.on{display:grid}
+[data-mode="garde"] #bell-badge{background:#E2557E}
+
+/* ---------- onglets défilants ---------- */
+#tabs{display:flex;gap:7px;overflow-x:auto;padding:0 0 11px;scrollbar-width:none;
+  -webkit-overflow-scrolling:touch;scroll-behavior:smooth}
+#tabs::-webkit-scrollbar{display:none}
+#tabs button{flex:none;display:flex;align-items:center;gap:6px;padding:9px 14px;border-radius:999px;
+  background:var(--surface);border:1px solid var(--border);font-size:13px;font-weight:600;
+  color:var(--mute);white-space:nowrap;transition:.2s}
+#tabs button .e{font-size:14px;line-height:1}
+#tabs button.on{background:var(--accent);color:#fff;border-color:transparent;
+  box-shadow:0 8px 18px -10px var(--accent)}
+
+/* ---------- bandeau installation ---------- */
+#install-bar{display:flex;align-items:center;gap:11px;margin:14px 16px 0;padding:13px 14px;
+  background:var(--accent-soft);border-radius:var(--r-sm)}
+#install-bar p{margin:0;flex:1;font-size:12.5px;line-height:1.5;color:var(--head)}
+#install-bar .x{color:var(--mute);font-size:15px;padding:2px 4px;flex:none}
+
+/* ---------- centre de rappels (cloche) ---------- */
+.rem{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
+.rem:last-child{border-bottom:none}
+.rem .t{width:52px;font-size:12.5px;font-weight:600;color:var(--mute);flex:none;font-variant-numeric:tabular-nums}
+.rem .b{flex:1;min-width:0}
+.rem .b b{display:block;font-size:14px;color:var(--head);font-weight:600}
+.rem .b span{font-size:11.5px;color:var(--mute)}
+.rem .s{width:9px;height:9px;border-radius:50%;flex:none}
+.rem.late .t{color:var(--accent)}
+.rem.late .s{background:var(--accent)}
+.rem.todo .s{background:var(--ring-bg)}
+.rem.done .s{background:var(--menthe)}
+.rem.done .b b{color:var(--mute);text-decoration:line-through}
+.sh-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:6px}
+.sh-head h2{font-size:19px}
 
 /* ---------- sheets / modals ---------- */
 .sheet{position:fixed;inset:0;z-index:60;display:none}
@@ -208,7 +256,7 @@ nav button.on .ico{transform:translateY(-3px) scale(1.12)}
 .grab{width:40px;height:4px;border-radius:9px;background:var(--border);margin:0 auto 16px}
 
 /* ---------- toast ---------- */
-#toast{position:fixed;left:50%;bottom:calc(var(--nav-h) + 20px + var(--safe-b));transform:translateX(-50%) translateY(20px);
+#toast{position:fixed;left:50%;bottom:calc(26px + var(--safe-b));transform:translateX(-50%) translateY(20px);
   background:var(--head);color:var(--surface);padding:12px 18px;border-radius:999px;font-size:13.5px;font-weight:600;
   z-index:80;opacity:0;pointer-events:none;transition:.3s;max-width:88vw;text-align:center}
 #toast.on{opacity:1;transform:translateX(-50%)}
@@ -323,11 +371,29 @@ a{color:var(--accent)}
 <!-- ============ APP ============ -->
 <main id="app" class="hidden">
 
+  <header id="topbar">
+    <div class="hd-row">
+      <img class="hd-logo" src="icons/icon-192.png" alt="">
+      <div class="hd-txt"><b>Nurse Yossr</b><span id="hd-hello">Bonjour</span></div>
+      <div class="hd-act">
+        <button class="ic" id="btn-bell" aria-label="Rappels du jour">🔔<i id="bell-badge">0</i></button>
+        <button class="ic" id="btn-out" aria-label="Se déconnecter">⏻</button>
+      </div>
+    </div>
+    <div id="tabs"></div>
+  </header>
+
+  <div id="install-bar" class="hidden">
+    <p><b>Installe l'app</b> sur ton téléphone pour un accès rapide.</p>
+    <button class="btn sm solid" id="install-go">Installer</button>
+    <button class="x" id="install-x" aria-label="Masquer">✕</button>
+  </div>
+
   <!-- HOME -->
   <section class="page on" id="p-home">
     <div class="topbar">
       <div>
-        <h1 id="greet">Bonjour</h1>
+        <h1 id="greet">Aujourd'hui</h1>
         <div class="date" id="today-line">—</div>
       </div>
       <div class="chip" id="shift-chip">—</div>
@@ -353,7 +419,6 @@ a{color:var(--accent)}
     <div class="card quote" style="margin-top:14px">
       <div class="eyebrow" style="margin-bottom:8px">Pensée du jour</div>
       <p id="q-fr">—</p>
-      <small id="q-tn">—</small>
     </div>
 
     <div class="card">
@@ -407,21 +472,6 @@ a{color:var(--accent)}
       <button class="btn solid wide" id="mood-save">Enregistrer</button>
     </div>
     <div class="card"><h2>Ton humeur cette semaine</h2><svg class="chart" id="mood-chart"></svg></div>
-  </section>
-
-  <!-- MORE -->
-  <section class="page" id="p-more">
-    <div class="topbar"><div><h1>Plus</h1><div class="date">Tout le reste est ici</div></div></div>
-    <div class="menu-grid">
-      <button data-go="p-sleep"><span class="ico">🌙</span><b>Sommeil</b><span>Coucher, réveil, durée</span></button>
-      <button data-go="p-stats"><span class="ico">📊</span><b>Statistiques</b><span>Ta semaine en chiffres</span></button>
-      <button data-go="p-relax"><span class="ico">🧘</span><b>Détente</b><span>Respiration, sons, adhkar</span></button>
-      <button data-go="p-notes"><span class="ico">📝</span><b>Notes</b><span>Ta checklist perso</span></button>
-      <button data-go="p-sched"><span class="ico">🗓️</span><b>Horaires</b><span>Semaine et gardes</span></button>
-      <button data-go="p-tools"><span class="ico">💉</span><b>Outils</b><span>Débit, IMC, conversions</span></button>
-      <button data-go="p-set"><span class="ico">⚙️</span><b>Réglages</b><span>Profil et rappels</span></button>
-      <button id="btn-garde-tog"><span class="ico">🌗</span><b>Mode garde</b><span id="garde-state">Désactivé</span></button>
-    </div>
   </section>
 
   <!-- SLEEP -->
@@ -502,6 +552,15 @@ a{color:var(--accent)}
       <div id="sched-list"></div>
     </div>
     <div class="card">
+      <div class="item" style="padding:0">
+        <div class="name"><b>Mode garde aujourd'hui</b><span id="garde-state">Désactivé</span></div>
+        <div class="sw" id="sw-garde"></div>
+      </div>
+      <div class="sub" style="margin-top:12px">Active-le pour une garde de nuit non prévue :
+        les repas, l'eau et le thème s'adaptent tout de suite.</div>
+    </div>
+
+    <div class="card">
       <h2>Ajouter une garde</h2>
       <div class="sub">Une nuit exceptionnelle, en dehors de la semaine type</div>
       <div class="two" style="margin-top:10px">
@@ -555,29 +614,17 @@ a{color:var(--accent)}
         <div class="sw" id="sw-notif"></div></div>
       <div class="item"><div class="name"><b>Pause toutes les 2 h</b><span>Deux minutes pour respirer</span></div>
         <div class="sw" id="sw-pause"></div></div>
-      <div class="item"><div class="name"><b>Langue des messages</b><span>Français ou tounsi</span></div>
-        <div class="pillrow"><button class="pill" data-lang="fr">FR</button><button class="pill" data-lang="tn">TN</button></div></div>
       <button class="btn wide" id="btn-test-notif">Tester une notification</button>
       <div class="sub" id="rem-preview" style="margin-top:14px;line-height:1.8"></div>
     </div>
     <div class="card">
       <h2>Données</h2>
       <button class="btn wide" id="btn-export">Exporter mes données</button>
-      <button class="btn wide" id="btn-install">Installer sur l'écran d'accueil</button>
       <button class="btn ghost wide" id="btn-logout">Se déconnecter</button>
       <div class="badge-note" id="cloud-state"><span class="dot-sync"></span>—</div>
     </div>
   </section>
 
-  <nav>
-    <div class="inner">
-      <button data-go="p-home" class="on"><span class="ico">🏠</span>Accueil</button>
-      <button data-go="p-water"><span class="ico">💧</span>Eau</button>
-      <button data-go="p-meals"><span class="ico">🍽️</span>Repas</button>
-      <button data-go="p-mood"><span class="ico">💗</span>Humeur</button>
-      <button data-go="p-more"><span class="ico">⋯</span>Plus</button>
-    </div>
-  </nav>
 </main>
 
 <div id="toast"></div>
@@ -631,7 +678,7 @@ function vibrate(p){ try{ navigator.vibrate && navigator.vibrate(p); }catch(e){}
 const DEFAULT_STATE = {
   v: 1,
   profile: { name:"", weight:60, waterGoal:2100, wake:"06:30", bed:"22:30",
-             lang:"fr", notif:false, pauseOn:true, height:165 },
+             notif:false, pauseOn:true, height:165, hideInstall:false },
   schedule: { 0:{off:true,start:"08:00",end:"14:00"}, 1:{off:false,start:"08:00",end:"14:00"},
               2:{off:false,start:"08:00",end:"14:00"}, 3:{off:false,start:"08:00",end:"14:00"},
               4:{off:false,start:"08:00",end:"14:00"}, 5:{off:false,start:"08:00",end:"14:00"},
@@ -757,18 +804,13 @@ function pauseTimes(){
 }
 
 const TXT = {
-  fr:{ eau:["💧 Un verre d'eau","Bois maintenant, tu te sentiras mieux."],
-       repas:m=>["🍽️ "+m,"C'est le moment de manger. Assieds-toi 10 minutes."],
-       pause:["🧘 Pause de 2 minutes","Respire. Le service tiendra deux minutes sans toi."],
-       mood:["💗 Comment s'est passée ta journée ?","Une minute pour noter ton humeur."],
-       sleep:["🌙 Il est l'heure de dormir","Demain commence tôt. Repose-toi."] },
-  tn:{ eau:["💧 Chrab may","Kass may tawa, bech t7ess ro7ek a7ssen."],
-       repas:m=>["🍽️ "+m,"Wa9t el makla. O93od 3achra d9aye9 barka."],
-       pause:["🧘 Pause 2 d9aye9","Tanaffsi chwaya. El service bech yestanna fik."],
-       mood:["💗 Kifeh kenet nharek ?","D9i9a barka bech tsajel el mood mte3ek."],
-       sleep:["🌙 Wa9t el n3as","8odwa bekri. Erte7i."] }
+  eau:  ["💧 Un verre d'eau", "Bois maintenant, tu te sentiras mieux."],
+  repas: m => ["🍽️ " + m, "C'est le moment de manger. Assieds-toi 10 minutes."],
+  pause:["🧘 Pause de 2 minutes", "Respire. Le service tiendra deux minutes sans toi."],
+  mood: ["💗 Comment s'est passée ta journée ?", "Une minute pour noter ton humeur."],
+  sleep:["🌙 Il est l'heure de dormir", "Demain commence tôt. Repose-toi."]
 };
-const L = () => TXT[S.profile.lang] || TXT.fr;
+const L = () => TXT;
 
 /** Tous les rappels d'aujourd'hui, triés par heure */
 function remindersToday(){
@@ -892,26 +934,41 @@ function drawDial(){
 /* ============================================================
    8) NAVIGATION
    ============================================================ */
+const TABS = [
+  ["p-home",  "🏠", "Accueil"],     ["p-water", "💧", "Eau"],
+  ["p-meals", "🍽️", "Repas"],       ["p-mood",  "💗", "Humeur"],
+  ["p-sleep", "🌙", "Sommeil"],     ["p-sched", "🗓️", "Horaires"],
+  ["p-stats", "📊", "Stats"],       ["p-relax", "🧘", "Détente"],
+  ["p-notes", "📝", "Notes"],       ["p-tools", "💉", "Outils"],
+  ["p-set",   "⚙️", "Réglages"]
+];
+$("#tabs").innerHTML = TABS.map(([id, e, t]) =>
+  `<button data-go="${id}"><span class="e">${e}</span>${t}</button>`).join("");
+
 function go(id){
   $$(".page").forEach(p => p.classList.toggle("on", p.id === id));
-  $$("nav button").forEach(b => b.classList.toggle("on", b.dataset.go === id));
+  $$("#tabs button").forEach(b => {
+    const on = b.dataset.go === id;
+    b.classList.toggle("on", on);
+    if(on) b.scrollIntoView({ inline:"center", block:"nearest", behavior:"smooth" });
+  });
   window.scrollTo({ top:0, behavior:"instant" });
   render(id);
 }
-$$("nav button, [data-go]").forEach(b => b.dataset.go && b.addEventListener("click", () => go(b.dataset.go)));
+$$("#tabs button").forEach(b => b.addEventListener("click", () => go(b.dataset.go)));
 
 /* ============================================================
    9) RENDU
    ============================================================ */
 const QUOTES = [
-  ["Tu aides des personnes chaque jour. N'oublie pas de prendre soin de toi.", "Enti t3awen f nes kol nhar. Ma tensech ro7ek."],
-  ["Un verre d'eau maintenant vaut mieux qu'une migraine à 16h.", "Kass may tawa 5ir men wje3 ras fel 3chiya."],
-  ["Tu n'es pas une machine. Les pauses font partie du travail.", "Enti mouch machine. El pause hiya zeda men el khedma."],
-  ["Ton calme est un soin. Garde-en un peu pour toi.", "El hdou mte3ek dwe. Khalli chwaya lik enti."],
-  ["Manger à l'heure, c'est aussi soigner quelqu'un : toi.", "Kif tekel f wa9tek, enti t3alej wa7da : ro7ek."],
-  ["Personne ne te remerciera d'avoir sauté le déjeuner. Assieds-toi.", "7ad ma bech ya3tik chokran 3ala li ma keltech. O93od."],
-  ["Fatiguée n'est pas faible. C'est humain.", "Ta3ba mouch d3ifa. Hedhi tabi3a."],
-  ["Six heures debout, deux minutes assise. C'est le minimum.", "Sett se3at wa9fa, d9i9tin 9a3da. Hedha a9al chay."]
+  "Tu aides des personnes chaque jour. N'oublie pas de prendre soin de toi.",
+  "Un verre d'eau maintenant vaut mieux qu'une migraine à 16h.",
+  "Tu n'es pas une machine. Les pauses font partie du travail.",
+  "Ton calme est un soin. Garde-en un peu pour toi.",
+  "Manger à l'heure, c'est aussi soigner quelqu'un : toi.",
+  "Personne ne te remerciera d'avoir sauté le déjeuner. Assieds-toi.",
+  "Fatiguée n'est pas faible. C'est humain.",
+  "Six heures debout, deux minutes assise. C'est le minimum."
 ];
 const DHIKR = [
   ["سُبْحَانَ اللهِ وَبِحَمْدِهِ", "Subhan Allahi wa bihamdih", "33 fois — le cœur se calme."],
@@ -923,11 +980,10 @@ const DHIKR = [
 
 function renderHome(){
   const p  = profile(), d = day(), pr = progress(), sh = shiftFor();
-  const h  = new Date().getHours();
-  const hi = h < 12 ? "Bonjour" : h < 18 ? "Bon après-midi" : "Bonsoir";
-  $("#greet").textContent = `${hi} ${p.name || ""} 🌸`.trim();
+  $("#greet").textContent = "Aujourd'hui";
   $("#today-line").textContent = new Date().toLocaleDateString("fr-FR",
     { weekday:"long", day:"numeric", month:"long" });
+  hello();
   $("#shift-chip").textContent = shiftLabel(sh);
 
   const meals = mealsToday();
@@ -946,9 +1002,7 @@ function renderHome(){
     if(b.dataset.go === "p-home") addPause(); else go(b.dataset.go);
   }));
 
-  const q = QUOTES[new Date().getDate() % QUOTES.length];
-  $("#q-fr").textContent = q[0];
-  $("#q-tn").textContent = "— " + q[1];
+  $("#q-fr").textContent = QUOTES[new Date().getDate() % QUOTES.length];
 
   const until = t => ((toMin(t) - nowMin()) + 1440) % 1440;
   const next = remindersToday().filter(r => !isDone(r)).sort((a,b) => until(a.at) - until(b.at))[0];
@@ -1070,6 +1124,9 @@ function renderNotes(){
 }
 
 function renderSched(){
+  const g = isGardeToday();
+  $("#sw-garde").classList.toggle("on", g);
+  $("#garde-state").textContent = g ? "Active — les rappels sont adaptés" : "Désactivé";
   $("#sched-list").innerHTML = [1,2,3,4,5,6,0].map(i => {
     const s = S.schedule[i];
     return `<div class="day"><b>${DAYS_FR[i]}</b>
@@ -1101,7 +1158,6 @@ function renderSet(){
   $("#s-goal").value = p.waterGoal; $("#s-wake").value = p.wake; $("#s-bed").value = p.bed;
   $("#sw-notif").classList.toggle("on", p.notif);
   $("#sw-pause").classList.toggle("on", p.pauseOn);
-  $$("[data-lang]").forEach(b => b.classList.toggle("on", b.dataset.lang === p.lang));
   $("#notif-state").textContent = ("Notification" in window)
     ? (Notification.permission === "granted" ? "Autorisées sur cet appareil"
       : Notification.permission === "denied" ? "Bloquées — change-le dans les réglages du navigateur"
@@ -1141,10 +1197,15 @@ function renderTools(){
 function render(id){
   ({ "p-home":renderHome, "p-water":renderWater, "p-meals":renderMeals, "p-mood":renderMood,
      "p-sleep":renderSleep, "p-stats":renderStats, "p-notes":renderNotes, "p-sched":renderSched,
-     "p-set":renderSet, "p-tools":renderTools, "p-relax":renderRelax, "p-more":renderMore
+     "p-set":renderSet, "p-tools":renderTools, "p-relax":renderRelax
    }[id] || (()=>{}))();
+  bellBadge();
 }
-function renderMore(){ $("#garde-state").textContent = isGardeToday() ? "Actif aujourd'hui" : "Désactivé"; }
+function hello(){
+  const h = new Date().getHours();
+  const hi = h < 12 ? "Bonjour" : h < 18 ? "Bon après-midi" : "Bonsoir";
+  $("#hd-hello").textContent = `${hi}, ${S.profile.name || "Yossr"} 🌸`;
+}
 function renderRelax(){ showDhikr(); }
 
 /* ---- helpers ---- */
@@ -1250,11 +1311,11 @@ $("#g-add").addEventListener("click", () => {
   S.gardes[dt] = { start:$("#g-start").value, end:$("#g-end").value };
   save(); renderSched(); renderHome(); toast("Garde ajoutée. Les rappels s'adaptent.");
 });
-$("#btn-garde-tog").addEventListener("click", () => {
+$("#sw-garde").addEventListener("click", () => {
   const k = todayKey();
   if(S.gardes[k]){ delete S.gardes[k]; toast("Mode garde désactivé"); }
   else { S.gardes[k] = { start:"14:00", end:"08:00" }; toast("Mode garde activé 🌗"); }
-  save(); applyTheme(); renderMore(); renderHome();
+  save(); applyTheme(); renderSched();
 });
 
 $("#s-save").addEventListener("click", () => {
@@ -1263,7 +1324,7 @@ $("#s-save").addEventListener("click", () => {
   p.weight = +$("#s-weight").value || p.weight;
   p.waterGoal = +$("#s-goal").value || Math.round(p.weight * 35 / 50) * 50;
   p.wake = $("#s-wake").value || p.wake; p.bed = $("#s-bed").value || p.bed;
-  save(); renderSet(); toast("Profil enregistré");
+  save(); renderSet(); hello(); toast("Profil enregistré");
 });
 $("#s-weight").addEventListener("input", e => {
   const w = +e.target.value; if(w > 20) $("#s-goal").value = Math.round(w * 35 / 50) * 50;
@@ -1271,15 +1332,78 @@ $("#s-weight").addEventListener("input", e => {
 $("#sw-pause").addEventListener("click", () => {
   S.profile.pauseOn = !S.profile.pauseOn; save(); renderSet();
 });
-$$("[data-lang]").forEach(b => b.addEventListener("click", () => {
-  S.profile.lang = b.dataset.lang; save(); renderSet(); toast(b.dataset.lang === "tn" ? "Behy, bel tounsi 🌸" : "Messages en français");
-}));
 $("#btn-export").addEventListener("click", () => {
   const blob = new Blob([JSON.stringify(S, null, 2)], { type:"application/json" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob); a.download = `nurse-yossr-${todayKey()}.json`; a.click();
 });
-$("#sheet .bd").addEventListener("click", () => $("#sheet").classList.remove("on"));
+$("#sheet .bd").addEventListener("click", closeSheet);
+
+/* ============================================================
+   10 bis) LA CLOCHE — centre de rappels dans l'app
+   Marche même quand les notifications du téléphone sont coupées.
+   ============================================================ */
+function remStatus(r){
+  const done = isDone(r);
+  if(done) return "done";
+  return toMin(r.at) <= nowMin() ? "late" : "todo";
+}
+function lateCount(){ return remindersToday().filter(r => remStatus(r) === "late").length; }
+
+function bellBadge(){
+  const n = lateCount(), el = $("#bell-badge");
+  if(!el) return;
+  el.textContent = n > 9 ? "9+" : n;
+  el.classList.toggle("on", n > 0);
+}
+
+function openSheet(html){
+  $("#sheet-body").innerHTML = html;
+  $("#sheet").classList.add("on");
+}
+function closeSheet(){ $("#sheet").classList.remove("on"); }
+
+const REM_ICON = { eau:"💧", repas:"🍽️", pause:"🧘", mood:"💗", sleep:"🌙" };
+function openBell(){
+  const rems = remindersToday();
+  const order = { late:0, todo:1, done:2 };
+  const rows = rems.map(r => ({ r, s:remStatus(r) }))
+                   .sort((a,b) => order[a.s] - order[b.s] || toMin(a.r.at) - toMin(b.r.at));
+  const n = rows.filter(x => x.s === "late").length;
+  const perm = ("Notification" in window) ? Notification.permission : "unsupported";
+
+  const head = `<div class="sh-head"><h2>Rappels du jour</h2>
+      <span class="chip">${n ? n + " en retard" : "tout est à jour ✓"}</span></div>
+    <div class="sub">${shiftLabel(shiftFor())}</div>`;
+
+  const push = perm === "granted"
+    ? `<div class="sub" style="margin-top:14px">🔔 Les notifications du téléphone sont activées.</div>`
+    : `<div class="card" style="margin-top:14px;box-shadow:none">
+         <div class="sub">Reçois aussi les rappels quand l'app est fermée.</div>
+         <button class="btn solid wide" id="bell-allow" style="margin-top:10px">Activer les notifications</button>
+       </div>`;
+
+  const list = rows.map(({ r, s }) => `
+    <div class="rem ${s}" data-page="${r.page}">
+      <div class="t">${r.at}</div>
+      <div class="b"><b>${REM_ICON[r.type] || "•"} ${r.title.replace(/^[^\s]+\s/, "")}</b>
+        <span>${s === "done" ? "fait ✓" : s === "late" ? "en retard" : "à venir"}</span></div>
+      <div class="s"></div>
+    </div>`).join("");
+
+  openSheet(head + `<div style="margin-top:10px">${list}</div>` + push);
+
+  $$("#sheet-body .rem").forEach(el => el.addEventListener("click", () => {
+    closeSheet(); go(el.dataset.page);
+  }));
+  const allow = $("#bell-allow");
+  if(allow) allow.addEventListener("click", async () => { closeSheet(); await askNotif(); });
+}
+$("#btn-bell").addEventListener("click", () => {
+  $("#btn-bell").classList.add("ring");
+  setTimeout(() => $("#btn-bell").classList.remove("ring"), 1100);
+  openBell();
+});
 
 /* ============================================================
    11) NOTIFICATIONS
@@ -1320,7 +1444,7 @@ async function fire(r, mark = true){
 }
 
 function tick(){
-  drawDialSafe();
+  drawDialSafe(); bellBadge();
   if(!S.profile.notif) return;
   const d = day(), now = nowMin();
   for(const r of remindersToday()){
@@ -1613,18 +1737,48 @@ function afterAuth(){
 function enterApp(){
   $("#gate-auth").classList.add("hidden"); $("#gate-onb").classList.add("hidden");
   $("#app").classList.remove("hidden");
-  applyTheme(); go("p-home"); tick();
+  applyTheme(); hello(); showInstallBar(); go("p-home"); tick();
 }
 
 /* ============================================================
    16) INSTALLATION PWA
    ============================================================ */
 let deferred = null;
-window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); deferred = e; });
-$("#btn-install").addEventListener("click", async () => {
-  if(deferred){ deferred.prompt(); deferred = null; }
-  else toast("Menu du navigateur → « Ajouter à l'écran d'accueil »");
+const isStandalone = () => window.matchMedia("(display-mode: standalone)").matches
+  || window.navigator.standalone === true;
+const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent);
+
+function showInstallBar(){
+  if(!$("#install-bar")) return;
+  const hide = isStandalone() || S.profile.hideInstall;
+  $("#install-bar").classList.toggle("hidden", !!hide);
+}
+window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); deferred = e; showInstallBar(); });
+window.addEventListener("appinstalled", () => { deferred = null; showInstallBar(); toast("Installée 🌸"); });
+
+$("#install-go").addEventListener("click", async () => {
+  if(deferred){
+    deferred.prompt();
+    const { outcome } = await deferred.userChoice;
+    deferred = null; showInstallBar();
+    if(outcome === "accepted") toast("Installation en cours…");
+    return;
+  }
+  openSheet(`<div class="sh-head"><h2>Installer l'application</h2></div>
+    <div class="sub" style="line-height:1.9;margin-top:8px">
+      <b>iPhone</b> — ouvre ce lien dans <b>Safari</b>, appuie sur le bouton Partager
+      (le carré avec la flèche), puis sur <b>Sur l'écran d'accueil</b>.<br><br>
+      <b>Android</b> — menu ⋮ du navigateur, puis <b>Installer l'application</b>.
+    </div>
+    <button class="btn solid wide" id="sh-ok" style="margin-top:16px">J'ai compris</button>`);
+  $("#sh-ok").addEventListener("click", closeSheet);
 });
+$("#install-x").addEventListener("click", () => {
+  S.profile.hideInstall = true; save(); showInstallBar();
+});
+
+/* ---- déconnexion depuis l'en-tête ---- */
+$("#btn-out").addEventListener("click", () => $("#btn-logout").click());
 
 /* ============================================================
    17) DEMARRAGE
