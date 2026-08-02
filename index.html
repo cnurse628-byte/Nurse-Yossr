@@ -833,7 +833,7 @@ const FIREBASE_CONFIG = {
 const VAPID_KEY = "BHF4uyKx2qXYuDTYFraniyKXRA2nac0o_AOp5WdL46onWZUI4ZTATnyZfi0AsL_7jVxXMrdiDmiYyFCNuhNd2q0";
 
 const FB_READY = !FIREBASE_CONFIG.apiKey.startsWith("COLLE");
-const APP_VERSION = "3.9.1";   // doit être identique à VERSION dans sw.js
+const APP_VERSION = "3.9.2";   // doit être identique à VERSION dans sw.js
 
 /* ============================================================
    2) OUTILS
@@ -1123,7 +1123,10 @@ function buildPlan(){
     try{
       days[k] = remindersToday()
         .filter(r => r.type !== "sleep")
-        .map(r => ({ at:r.at, t:r.title, b:r.body, p:r.page, ty:r.type, m:r.meal || "" }));
+        .map(r => ({ at:r.at, t:r.title, b:r.body, p:r.page, ty:r.type, m:r.meal || "",
+                     // rang de la pause dans la journée : le serveur en a besoin
+                     // pour ne pas rappeler une pause qu'elle a déjà prise
+                     i: r.type === "pause" ? Number(r.id.replace(/\D/g, "")) : 0 }));
     }catch(e){ days[k] = []; }
     d.setDate(d.getDate() + 1);
   }
