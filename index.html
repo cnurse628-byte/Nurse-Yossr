@@ -349,10 +349,13 @@ a{color:var(--accent)}
 .bk-title{flex:1;min-width:0;font-family:"Bricolage Grotesque",sans-serif;font-weight:800;
   font-size:16px;color:var(--head);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .bk-stage{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);
-  overflow:auto;-webkit-overflow-scrolling:touch;display:grid;place-items:start center;
-  min-height:60vh;padding:8px;touch-action:pan-x pan-y}
+  overflow:auto;-webkit-overflow-scrolling:touch;min-height:60vh;padding:8px;
+  touch-action:pan-x pan-y;display:grid;align-content:start;
+  justify-content:center;justify-content:safe center}
 #bk-zoom{flex:none;cursor:pointer}
-.bk-stage canvas{max-width:100%;height:auto;display:block;border-radius:6px}
+/* pas de max-width : c'est le zoom qui décide de la largeur,
+   sinon la page reste bloquée à la taille de l'écran */
+.bk-stage canvas{max-width:none;height:auto;display:block;border-radius:6px}
 .bk-ctrl{display:flex;align-items:center;gap:10px;margin-top:12px}
 .bk-ctrl .btn{padding:12px 18px;font-size:17px;flex:none}
 .bk-ctrl input[type=range]{flex:1;margin:0}
@@ -783,7 +786,7 @@ const FIREBASE_CONFIG = {
 const VAPID_KEY = "BHF4uyKx2qXYuDTYFraniyKXRA2nac0o_AOp5WdL46onWZUI4ZTATnyZfi0AsL_7jVxXMrdiDmiYyFCNuhNd2q0";
 
 const FB_READY = !FIREBASE_CONFIG.apiKey.startsWith("COLLE");
-const APP_VERSION = "3.8.0";   // doit être identique à VERSION dans sw.js
+const APP_VERSION = "3.8.1";   // doit être identique à VERSION dans sw.js
 
 /* ============================================================
    2) OUTILS
