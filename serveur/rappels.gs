@@ -1,39 +1,18 @@
-/**
- * Nurse Yossr — envoi des rappels quand l'application est fermée.
- *
- * À coller dans Google Apps Script (script.google.com).
- * Tourne toutes les 5 minutes, lit le plan déposé par l'app dans Firestore,
- * et envoie les rappels dus via Firebase Cloud Messaging.
- *
- * Installation : voir README.md, section « Rappels app fermée ».
- */
-
-// ─────────────────────────────────────────────────────────────
-// 1) À REMPLIR
-// ─────────────────────────────────────────────────────────────
-
-// Firebase → ⚙️ Paramètres du projet → Comptes de service →
-// « Générer une nouvelle clé privée » → ouvre le fichier .json → colle tout ici.
 const COMPTE_SERVICE = {
   "type": "service_account",
-  "project_id": "COLLE_ICI_LE_CONTENU_DU_FICHIER_JSON",
-  "private_key_id": "",
-  "private_key": "",
-  "client_email": "",
-  "client_id": ""
+  "project_id": "nurse-yossr",
+  "private_key_id": "b4edbdb46b23635a3fa6123e104b1ecd85e0fef6",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCqYIH+7lhdSyay\n5ttVW8L+2k4M9EIy1O3ZWh87EqVctV+hnK8ThtvHqIsZnnnUZY1VyUDqtn3v4LG/\nhC0bGjzUlNDyiS1rq2MFMNGO1MTEK1UmbxRPpOpnx4RTPgrekUK5/cKOGLePfIMw\nEfHTLreEmguEElIUIA3e2W6hFJIzVsuQe6gBUZPioTeFEPd2HBt2xDtexFhgaUPU\nZSVGlVQ9XyzOSqzVcHdv85U3/9++QVfoy7wtuLg3LpkjRIo3KYibdSbYq+wJcQjU\nq930G1vkwIa7epYlQq6U2Jrf0OPnIktVYo8nVzxg2bzJuI7x9MkbgizwgYQRlqhn\nOnN2PwbxAgMBAAECggEAKhyBdQfnWmPVVFnAM6hjGYfOy9/hrtu3UEY4uuqgabpA\nwVrPYTWvg/lyLCph9XAGT4JXY8woc45nkK00UuMYzvhbbt8eFWM+rc1Dtph7a/tD\n6CSDci4SbAVB/Ss0F4/y3LLOkD2mvTXq3QpKaca9wG4s03+NvwCvPPokIHdLrZlq\ndIAL0mSZulS+4uqp/ifkpjPu8FM0l0VgEHODNSbnjBpV2RTkgQA89088EBkSKxUo\nmuBIObEXTRxMMpW2otMZgrN0LZS/Fu3FU9003ArcZ/+scjHyhV3YIn/739/fEAOq\nTaXeHC04b9JggnwEvPoYeYFuL3y6XqmCpr8n1n59MwKBgQDeYTcrKwtlRVyKb3wO\nLQNxWmHwko7fZASrGB6ordLTgskTnWux9wWf5bcb9Tzw3H0AUPPmAjYlI3CGcQcm\nUP+jha2FKMBe5uVLZrpVMu+Opg8ij4yWttCMEHwic4Op/0Poi4Ty5T1szR3iW2/F\noLXzUyFNfyHQNiuS5PWpVSqoYwKBgQDEIp/WUeDAI1Vck5XslWA2RDt1rXXFsM+p\nuDJbnoS+7toOW852p6ES2/qY1PAUrLEzXLDWuz3oE0xj9kDhIPtvFIwz66DqH10T\nJdpy8vlE/FCuFK0GPvD8Ld1KTTAPn8aEVdim2qKZmRwuTfDtxvChTd4p00ve8sEz\n3TkwKjmRmwKBgQCHnoImsXmhqUtmodbmTk1rM9PHA5peYoD2Vx9bf6azl29Jpxem\n0R99BHtHcahYvB7/sl8MRwz+WT6mvwe9NmixMTVBoDixp97uvRemHgo61MsmKKV0\nxMkqomMSH6CMbEDd8TiDaYqsb+tpwJnJzNkqK+iDeqUEdgTc8QVg36/EQQKBgCKU\nAB3mvXriP9BcbJgTFa07hkgO1q6Np27CfI5OehS3Q1Y4tUOR9gG/KoT7NYBPmcX2\nV27j/9wEWvlclr+Z8vn4Y2db6TidYulXSRXu5CdXXFn0ZzSssAulglfxF8IJZxQ5\nlkKEVRpDNgar0wf4hL/LXJl/GOcrYQhlvglRyGh1AoGAKi1cmnSvmQzrGjZDaN0A\no2z0mtSWXwzQyfyKy/cTiZVha1b+6wF4HMCK9JXV1x0gU9Pj98DQKf7Jiplios6p\nHIaP1L2dpqVH/oJwn+Ha9ULVT83vAyTiw8Qf2OORUJ5BxKjH0YIxGvH61AM4VRjs\nVnakzfqJCsWzQ0HQeOcZCkg=\n-----END PRIVATE KEY-----\n",
+  "client_email": "firebase-adminsdk-fbsvc@nurse-yossr.iam.gserviceaccount.com",
+  "client_id": "100853478389957738875",
+  "token_uri": "https://oauth2.googleapis.com/token"
 };
 
 const PROJET  = "nurse-yossr";
 const APP_URL = "https://cnurse628-byte.github.io/Nurse-Yossr/";
 
-// Le déclencheur tourne toutes les 5 minutes. La fenêtre est un peu plus large
-// (Google ne déclenche jamais à la seconde près) et une mémoire empêche
-// d'envoyer deux fois le même rappel.
 const FENETRE = 8;
 
-// ─────────────────────────────────────────────────────────────
-// 2) LA FONCTION À DÉCLENCHER (choisis-la dans le déclencheur)
-// ─────────────────────────────────────────────────────────────
 
 function envoyerRappels() {
   const jeton = accessToken_();
@@ -138,6 +117,8 @@ function hm_(s) { const p = String(s || "0:0").split(":"); return (+p[0]) * 60 +
 // ─────────────────────────────────────────────────────────────
 
 function accessToken_() {
+  if (!COMPTE_SERVICE || !COMPTE_SERVICE.private_key)
+    throw new Error("Clé de service manquante : colle le fichier .json dans CLE_JSON.");
   const now = Math.floor(Date.now() / 1000);
   const enTete = b64_(JSON.stringify({ alg: "RS256", typ: "JWT" }));
   const corps  = b64_(JSON.stringify({
