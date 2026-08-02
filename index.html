@@ -192,8 +192,20 @@ svg.chart text{font-size:9px;fill:var(--mute);font-family:"Instrument Sans"}
 #tas-btn span{font-size:12.5px;opacity:.82;display:block;margin-top:5px}
 #tas-btn.full{background:var(--menthe);box-shadow:0 20px 38px -20px var(--menthe)}
 .dhikr-ar{font-size:21px;line-height:1.95;direction:rtl;text-align:right;color:var(--head)}
-.dhikr-tr{font-size:13px;color:var(--mute);margin-top:8px;font-style:italic}
-.dhikr-no{font-size:12.5px;color:var(--mute);margin-top:6px}
+.dhikr-no{font-size:12.5px;color:var(--mute);margin-top:10px;text-align:right}
+
+/* ---------- journal d'humeur ---------- */
+.jrn{display:flex;gap:13px;padding:14px 0;border-bottom:1px solid var(--border)}
+.jrn:last-child{border-bottom:none}
+.jrn .jd{width:46px;flex:none;text-align:center}
+.jrn .jd b{display:block;font-family:"Bricolage Grotesque",sans-serif;font-weight:800;
+  font-size:19px;color:var(--head);line-height:1.1}
+.jrn .jd span{font-size:10.5px;color:var(--mute);text-transform:uppercase;letter-spacing:.06em}
+.jrn .je{font-size:25px;flex:none;line-height:1.2}
+.jrn .jb{flex:1;min-width:0}
+.jrn .jb b{display:block;font-size:13px;color:var(--head);font-weight:600;margin-bottom:3px}
+.jrn .jb p{margin:0;font-size:13.5px;color:var(--text);line-height:1.55;white-space:pre-wrap}
+.jrn .jb i{font-style:normal;font-size:12.5px;color:var(--mute)}
 
 /* ---------- en-tête fixe ---------- */
 #topbar{position:sticky;top:0;z-index:30;padding:calc(var(--safe-t) + 12px) 16px 0;
@@ -488,6 +500,8 @@ a{color:var(--accent)}
       <button class="btn solid wide" id="mood-save">Enregistrer</button>
     </div>
     <div class="card"><h2>Ton humeur cette semaine</h2><svg class="chart" id="mood-chart"></svg></div>
+    <div class="card"><h2>Ton journal</h2><div class="sub">Ce que tu as noté les jours passés</div>
+      <div id="mood-hist"></div></div>
   </section>
 
   <!-- SLEEP -->
@@ -540,16 +554,6 @@ a{color:var(--accent)}
       <div class="sub" id="bq-streak" style="margin-top:12px">—</div></div>
 
     <div class="card">
-      <h2>Rappel de lecture</h2>
-      <div class="item" style="padding-top:4px"><div class="name"><b>Me rappeler chaque jour</b>
-        <span id="bq-rem-state">—</span></div><div class="sw" id="sw-bq"></div></div>
-      <label class="f">À quelle heure</label>
-      <input class="in" type="time" id="bq-time" value="07:30">
-      <div class="sub" style="margin-top:10px">Le soir, si la sourate n'est pas finie,
-        l'app te dit combien de versets il reste.</div>
-    </div>
-
-    <div class="card">
       <h2>Dhikr</h2>
       <div id="dhikr-box"></div>
       <div class="tasbih"><button id="tas-btn"><b id="tas-n">0</b><span id="tas-goal">/ 33</span></button></div>
@@ -564,20 +568,6 @@ a{color:var(--accent)}
       </div>
     </div>
 
-    <div class="card">
-      <h2>Rappel de dhikr</h2>
-      <div class="sub">Un petit rappel régulier pendant la journée</div>
-      <div class="item"><div class="name"><b>Activer</b><span id="dh-state">—</span></div>
-        <div class="sw" id="sw-dhikr"></div></div>
-      <div class="pillrow" id="dh-every">
-        <button class="pill" data-every="10">10 min</button>
-        <button class="pill" data-every="15">15 min</button>
-        <button class="pill" data-every="30">30 min</button>
-        <button class="pill" data-every="60">1 h</button>
-      </div>
-      <div class="sub" style="margin-top:12px">Les rappels arrivent quand l'app est ouverte
-        ou récemment utilisée. Voir README.md pour les recevoir app fermée.</div>
-    </div>
   </section>
 
   <section class="page" id="p-notes">
@@ -656,6 +646,20 @@ a{color:var(--accent)}
         <div class="sw" id="sw-notif"></div></div>
       <div class="item"><div class="name"><b>Pause toutes les 2 h</b><span>Deux minutes pour respirer</span></div>
         <div class="sw" id="sw-pause"></div></div>
+      <div class="item"><div class="name"><b>Lecture d'Al-Baqara</b><span id="bq-rem-state">—</span></div>
+        <div class="sw" id="sw-bq"></div></div>
+      <label class="f">Heure de la lecture</label>
+      <input class="in" type="time" id="bq-time" value="07:30">
+      <div class="sub" style="margin-top:8px">Le soir, si la sourate n'est pas finie,
+        l'app te dit combien de versets il reste.</div>
+      <div class="item" style="margin-top:6px"><div class="name"><b>Dhikr régulier</b><span id="dh-state">—</span></div>
+        <div class="sw" id="sw-dhikr"></div></div>
+      <div class="pillrow" id="dh-every">
+        <button class="pill" data-every="10">10 min</button>
+        <button class="pill" data-every="15">15 min</button>
+        <button class="pill" data-every="30">30 min</button>
+        <button class="pill" data-every="60">1 h</button>
+      </div>
     </div>
     <div class="card">
       <h2>Données</h2>
@@ -690,7 +694,7 @@ const FIREBASE_CONFIG = {
 const VAPID_KEY = "BHF4uyKx2qXYuDTYFraniyKXRA2nac0o_AOp5WdL46onWZUI4ZTATnyZfi0AsL_7jVxXMrdiDmiYyFCNuhNd2q0";
 
 const FB_READY = !FIREBASE_CONFIG.apiKey.startsWith("COLLE");
-const APP_VERSION = "2.2.0";   // doit être identique à VERSION dans sw.js
+const APP_VERSION = "2.3.0";   // doit être identique à VERSION dans sw.js
 
 /* ============================================================
    2) OUTILS
@@ -1022,22 +1026,18 @@ const QUOTES = [
   "Six heures debout, deux minutes assise. C'est le minimum."
 ];
 const DHIKR = [
-  ["سُبْحَانَ اللهِ وَبِحَمْدِهِ", "Subhan Allahi wa bihamdih", "33 fois — le cœur se calme."],
-  ["لَا حَوْلَ وَلَا قُوَّةَ إِلَّا بِاللهِ", "La hawla wa la quwwata illa billah", "Quand la fatigue pèse."],
-  ["أَسْتَغْفِرُ اللهَ وَأَتُوبُ إِلَيْهِ", "Astaghfirullaha wa atubu ilayh", "Entre deux patients."],
-  ["اللَّهُمَّ أَعِنِّي عَلَى ذِكْرِكَ وَشُكْرِكَ وَحُسْنِ عِبَادَتِكَ",
-   "Allahumma a'inni 'ala dhikrika wa shukrika wa husni 'ibadatik", "Après la prière."],
-  ["حَسْبُنَا اللهُ وَنِعْمَ الْوَكِيلُ", "Hasbuna Allahu wa ni'ma al-wakil", "Avant une garde difficile."],
-  ["رَبِّ اشْرَحْ لِي صَدْرِي وَيَسِّرْ لِي أَمْرِي", "Rabbi ishrah li sadri wa yassir li amri", "Avant d'entrer au service."],
-  ["لَا إِلَهَ إِلَّا اللهُ وَحْدَهُ لَا شَرِيكَ لَهُ", "La ilaha illa Allah wahdahu la sharika lah", "Cent fois par jour."],
-  ["سُبْحَانَ اللهِ وَالْحَمْدُ لِلهِ وَلَا إِلَهَ إِلَّا اللهُ وَاللهُ أَكْبَرُ",
-   "Subhan Allah, wal-hamdu lillah, wa la ilaha illa Allah, wallahu akbar", "Les quatre paroles aimées."],
-  ["اللَّهُمَّ صَلِّ وَسَلِّمْ عَلَى نَبِيِّنَا مُحَمَّدٍ", "Allahumma salli wa sallim 'ala nabiyyina Muhammad", "Autant que tu peux."],
-  ["اللَّهُمَّ اشْفِ أَنْتَ الشَّافِي لَا شِفَاءَ إِلَّا شِفَاؤُكَ",
-   "Allahumma ishfi, anta ash-Shafi, la shifa'a illa shifa'uk", "Pour tes patients."],
-  ["رَبَّنَا آتِنَا فِي الدُّنْيَا حَسَنَةً وَفِي الْآخِرَةِ حَسَنَةً",
-   "Rabbana atina fid-dunya hasanatan wa fil-akhirati hasanah", "La plus complète des invocations."],
-  ["اللَّهُمَّ إِنِّي أَسْأَلُكَ الْعَافِيَةَ", "Allahumma inni as'aluka al-'afiyah", "Pour toi et pour eux."]
+  ["سُبْحَانَ اللهِ وَبِحَمْدِهِ", "33 fois — le cœur se calme."],
+  ["لَا حَوْلَ وَلَا قُوَّةَ إِلَّا بِاللهِ", "Quand la fatigue pèse."],
+  ["أَسْتَغْفِرُ اللهَ وَأَتُوبُ إِلَيْهِ", "Entre deux patients."],
+  ["اللَّهُمَّ أَعِنِّي عَلَى ذِكْرِكَ وَشُكْرِكَ وَحُسْنِ عِبَادَتِكَ", "Après la prière."],
+  ["حَسْبُنَا اللهُ وَنِعْمَ الْوَكِيلُ", "Avant une garde difficile."],
+  ["رَبِّ اشْرَحْ لِي صَدْرِي وَيَسِّرْ لِي أَمْرِي", "Avant d'entrer au service."],
+  ["لَا إِلَهَ إِلَّا اللهُ وَحْدَهُ لَا شَرِيكَ لَهُ", "Cent fois par jour."],
+  ["سُبْحَانَ اللهِ وَالْحَمْدُ لِلهِ وَلَا إِلَهَ إِلَّا اللهُ وَاللهُ أَكْبَرُ", "Les quatre paroles aimées."],
+  ["اللَّهُمَّ صَلِّ وَسَلِّمْ عَلَى نَبِيِّنَا مُحَمَّدٍ", "Autant que tu peux."],
+  ["اللَّهُمَّ اشْفِ أَنْتَ الشَّافِي لَا شِفَاءَ إِلَّا شِفَاؤُكَ", "Pour tes patients."],
+  ["رَبَّنَا آتِنَا فِي الدُّنْيَا حَسَنَةً وَفِي الْآخِرَةِ حَسَنَةً", "La plus complète des invocations."],
+  ["اللَّهُمَّ إِنِّي أَسْأَلُكَ الْعَافِيَةَ", "Pour toi et pour eux."]
 ];
 
 function renderHome(){
@@ -1110,6 +1110,9 @@ function renderMeals(){
   }).join("");
 }
 
+const MOOD_EMOJI = { 5:"😀", 4:"🙂", 3:"😐", 2:"😔", 1:"😫" };
+const MOOD_WORD  = { 5:"Très bien", 4:"Bien", 3:"Ça va", 2:"Pas terrible", 1:"Difficile" };
+
 function renderMood(){
   const d = day();
   $$("#mood-row .mood").forEach(b => b.classList.toggle("on", Number(b.dataset.m) === d.mood));
@@ -1120,6 +1123,21 @@ function renderMood(){
     label: DAYS_SHORT[new Date(k+"T12:00:00").getDay()],
     value: S.days[k]?.mood || 0
   })), 5);
+
+  const rows = Object.keys(S.days).sort().reverse()
+    .filter(k => S.days[k].mood != null).slice(0, 30);
+  $("#mood-hist").innerHTML = rows.length ? rows.map(k => {
+    const e = S.days[k], dt = new Date(k + "T12:00:00");
+    const bits = [MOOD_WORD[e.mood] || ""];
+    if(e.energy) bits.push("énergie " + e.energy + "/10");
+    if(k === todayKey()) bits.push("aujourd'hui");
+    return `<div class="jrn">
+      <div class="jd"><b>${dt.getDate()}</b><span>${dt.toLocaleDateString("fr-FR",{month:"short"}).replace(".","")}</span></div>
+      <div class="je">${MOOD_EMOJI[e.mood] || "•"}</div>
+      <div class="jb"><b>${DAYS_FR[dt.getDay()]} · ${bits.join(" · ")}</b>
+        ${e.note ? `<p>${escapeHtml(e.note)}</p>` : `<i>Pas de note ce jour-là</i>`}</div>
+    </div>`;
+  }).join("") : `<div class="empty">Rien pour l'instant.<br>Note ton humeur ce soir, tu la reliras plus tard.</div>`;
 }
 
 function renderSleep(){
@@ -1207,7 +1225,7 @@ function render(id){
   ({ "p-home":renderHome, "p-water":renderWater, "p-meals":renderMeals, "p-mood":renderMood,
      "p-notes":renderNotes, "p-relax":renderRelax,
      "p-dhikr":renderDhikr,
-     "p-set":() => { renderSet(); renderSched(); renderSleep(); }
+     "p-set":() => { renderSet(); renderSched(); renderSleep(); renderRappels(); }
    }[id] || (()=>{}))();
   bellBadge();
 }
@@ -1233,10 +1251,6 @@ function renderDhikr(){
   }).join("");
   $("#bq-streak").textContent = "🔥 " + quranStreak() + " jour(s) de suite avec la sourate terminée";
 
-  $("#sw-bq").classList.toggle("on", !!S.quran.on);
-  $("#bq-rem-state").textContent = S.quran.on ? "Rappel à " + S.quran.time : "Aucun rappel";
-  $("#bq-time").value = S.quran.time;
-
   showDhikr();
   const g = S.profile.tasGoal ?? 33, n = d.tasbih || 0;
   $("#tas-n").textContent = n;
@@ -1244,6 +1258,13 @@ function renderDhikr(){
   $("#tas-btn").classList.toggle("full", !!g && n >= g);
   $$("#tas-goals .pill").forEach(b => b.classList.toggle("on", +b.dataset.tas === g));
 
+}
+
+/* ---------- carte Rappels (dans Réglages) ---------- */
+function renderRappels(){
+  $("#sw-bq").classList.toggle("on", !!S.quran.on);
+  $("#bq-rem-state").textContent = S.quran.on ? "Chaque jour à " + S.quran.time : "Désactivé";
+  $("#bq-time").value = S.quran.time;
   $("#sw-dhikr").classList.toggle("on", !!S.profile.dhikrOn);
   $("#dh-state").textContent = S.profile.dhikrOn
     ? "Toutes les " + S.profile.dhikrEvery + " minutes" : "Désactivé";
@@ -1332,7 +1353,7 @@ $("#mood-save").addEventListener("click", () => {
   const d = day();
   if(d.mood == null) return toast("Choisis d'abord un visage");
   d.energy = +$("#en-range").value; d.note = $("#mood-note").value.trim();
-  save(); toast("Enregistré 💗"); renderMood();
+  save(); toast("Enregistré dans ton journal 💗"); renderMood();
 });
 
 $("#sl-save").addEventListener("click", () => {
@@ -1528,7 +1549,7 @@ function dhikrTick(){
   if(Date.now() - lastDhikr < every) return;
   lastDhikr = Date.now();
   const d = DHIKR[Math.floor(Math.random() * DHIKR.length)];
-  fire({ id:"dhikr", title:"📿 " + d[1], body:d[0], page:"p-dhikr" }, false);
+  fire({ id:"dhikr", title:d[0], body:"📿 " + d[1], page:"p-dhikr" }, false);
 }
 
 function tick(){
@@ -1600,7 +1621,7 @@ let dhikrI = 0;
 function showDhikr(){
   const d = DHIKR[dhikrI % DHIKR.length];
   $("#dhikr-box").innerHTML = `<div class="dhikr-ar">${d[0]}</div>
-    <div class="dhikr-tr">${d[1]}</div><div class="dhikr-no">${d[2]}</div>`;
+    <div class="dhikr-no">${d[1]}</div>`;
 }
 $("#dhikr-next").addEventListener("click", () => { dhikrI++; showDhikr(); });
 
@@ -1619,9 +1640,9 @@ $("#bq-go").addEventListener("click", () => {
 });
 $("#bq-done").addEventListener("click", () => setVerse(BQ_TOTAL()));
 $("#bq-reset").addEventListener("click", () => setVerse(0));
-$("#sw-bq").addEventListener("click", () => { S.quran.on = !S.quran.on; save(); renderDhikr(); });
+$("#sw-bq").addEventListener("click", () => { S.quran.on = !S.quran.on; save(); renderRappels(); });
 $("#bq-time").addEventListener("change", e => {
-  S.quran.time = e.target.value || "07:30"; save(); renderDhikr(); toast("Rappel à " + S.quran.time);
+  S.quran.time = e.target.value || "07:30"; save(); renderRappels(); toast("Rappel à " + S.quran.time);
 });
 
 /* ---- tasbih ---- */
@@ -1641,11 +1662,11 @@ $$("#tas-goals .pill").forEach(b => b.addEventListener("click", () => {
 $("#sw-dhikr").addEventListener("click", async () => {
   if(!S.profile.dhikrOn && Notification.permission !== "granted") await askNotif();
   S.profile.dhikrOn = !S.profile.dhikrOn;
-  lastDhikr = 0; save(); renderDhikr();
+  lastDhikr = 0; save(); renderRappels();
   toast(S.profile.dhikrOn ? "Rappels de dhikr activés 📿" : "Rappels de dhikr coupés");
 });
 $$("#dh-every .pill").forEach(b => b.addEventListener("click", () => {
-  S.profile.dhikrEvery = +b.dataset.every; lastDhikr = 0; save(); renderDhikr();
+  S.profile.dhikrEvery = +b.dataset.every; lastDhikr = 0; save(); renderRappels();
 }));
 
 /* ============================================================
