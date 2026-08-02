@@ -338,33 +338,6 @@ a{color:var(--accent)}
 .dot-sync.off{background:var(--mute)}
 
 /* ---------- étirements ---------- */
-.et-scene{display:grid;place-items:center;padding:6px 0 2px}
-#et-dessin{width:min(210px,58vw);height:min(210px,58vw)}
-#et-dessin .corps{fill:none;stroke:var(--head);stroke-width:3.4;stroke-linecap:round;stroke-linejoin:round}
-#et-dessin .tete{fill:var(--accent-soft);stroke:var(--head);stroke-width:3.4}
-#et-dessin .fleche{fill:none;stroke:var(--accent);stroke-width:2.6;stroke-linecap:round;
-  stroke-dasharray:4 5;opacity:.9}
-#et-dessin .pointe{fill:none;stroke:var(--accent);stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
-#et-dessin .sol{stroke:var(--border);stroke-width:2.5;stroke-linecap:round}
-.et-nom{font-family:"Bricolage Grotesque",sans-serif;font-weight:800;font-size:19px;
-  color:var(--head);text-align:center;margin-top:6px}
-.et-cote{text-align:center;font-size:12.5px;color:var(--accent);font-weight:600;
-  letter-spacing:.06em;text-transform:uppercase;margin-top:4px;min-height:16px}
-.et-num{font-family:"Bricolage Grotesque",sans-serif;font-weight:800;font-size:40px;
-  color:var(--head);text-align:center;line-height:1;margin:10px 0 10px;font-variant-numeric:tabular-nums}
-.et-tip{text-align:center;font-size:13px;color:var(--mute);line-height:1.6;margin-top:12px;min-height:42px}
-.et-points{display:flex;justify-content:center;gap:7px;margin-top:12px}
-.et-points i{width:8px;height:8px;border-radius:50%;background:var(--ring-bg);transition:.25s}
-.et-points i.on{background:var(--accent);transform:scale(1.25)}
-.et-points i.fait{background:var(--menthe)}
-.et-item{display:flex;align-items:center;gap:11px;padding:9px 0;border-bottom:1px solid var(--border)}
-.et-item:last-of-type{border-bottom:none;margin-bottom:12px}
-.et-item b{flex:1;font-size:13.5px;color:var(--head);font-weight:600}
-.et-item span{font-size:12px;color:var(--mute)}
-.et-item .n{width:22px;height:22px;border-radius:50%;background:var(--accent-soft);color:var(--head);
-  font-size:11.5px;font-weight:700;display:grid;place-items:center;flex:none}
-
-/* ---------- étirements ---------- */
 .et-li{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--border)}
 .et-li:last-of-type{border-bottom:none}
 .et-li svg{width:34px;height:40px;flex:none}
@@ -633,27 +606,6 @@ a{color:var(--accent)}
     </div>
 
 
-    <div class="card">
-      <h2>Étirements express</h2>
-      <div class="sub">2 minutes · 5 mouvements, pour le dos et la nuque</div>
-      <div id="et-repos">
-        <div id="et-liste"></div>
-        <button class="btn solid wide" id="et-go">Commencer</button>
-      </div>
-      <div id="et-cours" class="hidden">
-        <div class="et-scene"><svg id="et-dessin" viewBox="0 0 120 120" aria-hidden="true"></svg></div>
-        <div class="et-nom" id="et-nom">—</div>
-        <div class="et-cote" id="et-cote">—</div>
-        <div class="et-num" id="et-num">0</div>
-        <div class="bar"><i id="et-bar"></i></div>
-        <div class="et-tip" id="et-tip">—</div>
-        <div class="et-points" id="et-points"></div>
-        <div class="two" style="margin-top:14px">
-          <button class="btn" id="et-passer">Passer</button>
-          <button class="btn ghost" id="et-stop">Arrêter</button>
-        </div>
-      </div>
-    </div>
   </section>
 
   <!-- LIVRES -->
@@ -881,7 +833,7 @@ const FIREBASE_CONFIG = {
 const VAPID_KEY = "BHF4uyKx2qXYuDTYFraniyKXRA2nac0o_AOp5WdL46onWZUI4ZTATnyZfi0AsL_7jVxXMrdiDmiYyFCNuhNd2q0";
 
 const FB_READY = !FIREBASE_CONFIG.apiKey.startsWith("COLLE");
-const APP_VERSION = "3.9.0";   // doit être identique à VERSION dans sw.js
+const APP_VERSION = "3.9.1";   // doit être identique à VERSION dans sw.js
 
 /* ============================================================
    2) OUTILS
