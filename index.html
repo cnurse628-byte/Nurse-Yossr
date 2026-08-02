@@ -675,6 +675,7 @@ a{color:var(--accent)}
       <div class="sub">Pour recevoir les rappels même quand l'app n'est pas ouverte</div>
       <div class="diag" id="push-state"><i></i><div><b>—</b><span>—</span></div></div>
       <button class="btn wide" id="btn-push">Réessayer la connexion</button>
+      <button class="btn ghost wide hidden" id="btn-token">Voir le jeton (pour un test)</button>
     </div>
     <div class="card">
       <h2>Données</h2>
@@ -709,7 +710,7 @@ const FIREBASE_CONFIG = {
 const VAPID_KEY = "BHF4uyKx2qXYuDTYFraniyKXRA2nac0o_AOp5WdL46onWZUI4ZTATnyZfi0AsL_7jVxXMrdiDmiYyFCNuhNd2q0";
 
 const FB_READY = !FIREBASE_CONFIG.apiKey.startsWith("COLLE");
-const APP_VERSION = "2.7.1";   // doit être identique à VERSION dans sw.js
+const APP_VERSION = "2.8.0";   // doit être identique à VERSION dans sw.js
 
 /* ============================================================
    2) OUTILS
@@ -749,6 +750,7 @@ const DEFAULT_STATE = {
   days:   {},          // "2026-08-01": {...}
   notes:  [],
   fcmToken: null,
+  fcmTokens: [],
   onboarded: false
 };
 let S = structuredClone(DEFAULT_STATE);
@@ -1282,10 +1284,45 @@ function renderPush(){
   el.className = "diag " + FCM.state;
   el.querySelector("b").textContent    = FCM_TITLE[FCM.state] || FCM.state;
   el.querySelector("span").textContent = FCM.detail;
+  const n = (S.fcmTokens || []).filter(x => x && x.t).length;
+  const bt = $("#btn-token"); if(!bt) return;
+  bt.classList.toggle("hidden", !n);
+  bt.textContent = n > 1 ? `Voir les jetons (${n} appareils)` : "Voir le jeton (pour un test)";
 }
 $("#btn-push").addEventListener("click", async () => {
   if(Notification.permission !== "granted") await askNotif();
   initFCM();
+});
+
+/* Le jeton sert à s'envoyer un push de test depuis la console Firebase. */
+$("#btn-token").addEventListener("click", () => {
+  const list = (S.fcmTokens || []).filter(x => x && x.t);
+  const rows = list.map((x, i) => `
+    <div class="card" style="box-shadow:none;padding:14px;margin-bottom:10px">
+      <div class="row"><div><b style="color:var(--head);font-size:14px">${escapeHtml(x.d)}</b>
+        <div class="sub">${x.t === S.fcmToken ? "cet appareil" : "vu le " +
+          new Date(x.at).toLocaleDateString("fr-FR",{day:"numeric",month:"short"})}</div></div>
+        <button class="btn sm solid" data-tok="${i}">Copier</button></div>
+      <div class="code" data-box="${i}" style="white-space:pre-wrap;word-break:break-all;user-select:all;margin-top:10px;font-size:10.5px">${escapeHtml(x.t)}</div>
+    </div>`).join("");
+
+  openSheet(`<div class="sh-head"><h2>Jetons d'envoi</h2></div>
+    <div class="sub" style="line-height:1.8;margin-bottom:14px">
+      Console Firebase → <b>Engage → Messaging</b> → écris un titre →
+      <b>Envoyer un message de test</b> → colle le jeton du téléphone → <b>+</b> → <b>Tester</b>.
+      Ferme l'app sur le téléphone avant de tester.
+    </div>${rows || '<div class="empty">Aucun appareil enregistré.</div>'}`);
+
+  $$("#sheet-body [data-tok]").forEach(b => b.addEventListener("click", async () => {
+    const t = list[+b.dataset.tok].t;
+    try{ await navigator.clipboard.writeText(t); toast("Jeton copié ✓"); }
+    catch(e){
+      const box = $(`#sheet-body [data-box="${b.dataset.tok}"]`);
+      const r = document.createRange(); r.selectNodeContents(box);
+      const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+      toast("Appuie longuement puis « Copier »");
+    }
+  }));
 });
 
 /* ---------- carte Rappels (dans Réglages) ---------- */
@@ -1610,6 +1647,25 @@ const FCM_ERR = {
     "À ouvrir dans une fenêtre normale, pas dans un cadre."
 };
 
+/** Chaque appareil a son propre jeton. On les garde tous : sinon, ouvrir l'app
+ *  sur l'ordinateur effacerait le jeton du téléphone. */
+function deviceName(){
+  const u = navigator.userAgent;
+  if(/android/i.test(u))     return "Téléphone Android";
+  if(/iphone|ipod/i.test(u)) return "iPhone";
+  if(/ipad/i.test(u))        return "iPad";
+  if(/macintosh/i.test(u))   return "Mac";
+  if(/windows/i.test(u))     return "Ordinateur Windows";
+  return "Ordinateur";
+}
+function rememberToken(token){
+  S.fcmToken = token;                                    // appareil courant
+  const list = (S.fcmTokens || []).filter(x => x && x.t && x.t !== token);
+  list.unshift({ t:token, d:deviceName(), at:Date.now() });
+  S.fcmTokens = list.slice(0, 6);
+  save();
+}
+
 /** attend que le service worker soit vraiment actif (sinon getToken échoue) */
 function swActive(reg){
   if(reg.active) return Promise.resolve(reg);
@@ -1652,7 +1708,7 @@ async function initFCM(){
     const token = await fb.getToken(fb.messaging, { vapidKey:VAPID_KEY, serviceWorkerRegistration:reg });
     if(!token) return setFCM("err", "Firebase n'a pas renvoyé de jeton. Réessaie dans un instant.");
 
-    if(token !== S.fcmToken){ S.fcmToken = token; save(); }
+    rememberToken(token);
     setFCM("ok", "Cet appareil peut recevoir les rappels même app fermée. Jeton enregistré dans ton compte.");
 
     fb.onMessage(fb.messaging, payload => {
