@@ -783,7 +783,7 @@ const FIREBASE_CONFIG = {
 const VAPID_KEY = "BHF4uyKx2qXYuDTYFraniyKXRA2nac0o_AOp5WdL46onWZUI4ZTATnyZfi0AsL_7jVxXMrdiDmiYyFCNuhNd2q0";
 
 const FB_READY = !FIREBASE_CONFIG.apiKey.startsWith("COLLE");
-const APP_VERSION = "3.7.0";   // doit être identique à VERSION dans sw.js
+const APP_VERSION = "3.8.0";   // doit être identique à VERSION dans sw.js
 
 /* ============================================================
    2) OUTILS
@@ -853,10 +853,21 @@ function day(k = activeKey()){
 let saveTimer = null;
 let planTimer = null;
 
+/* Combien de journées on garde. Trois ans tient largement dans la limite
+   de Firestore une fois les journées passées allégées. */
+const GARDER = 1100;
+
 function paquet(){
   const t = structuredClone(S);
-  const keys = Object.keys(t.days).sort().slice(-180);   // on garde 6 mois
-  t.days = Object.fromEntries(keys.map(k => [k, t.days[k]]));
+  const auj = todayKey();
+  const keys = Object.keys(t.days).sort().slice(-GARDER);
+  t.days = Object.fromEntries(keys.map(k => {
+    const d = t.days[k];
+    // « fired », « seen » et « adds » ne servent que pendant la journée :
+    // une fois le jour passé, on les jette. Ça divise le poids par deux.
+    if(k < auj && d){ delete d.fired; delete d.seen; delete d.adds; }
+    return [k, d];
+  }));
   t.updatedAt = Date.now();
   return t;
 }
@@ -2061,6 +2072,7 @@ async function fire(r, mark = true){
     else new Notification(r.title, opts);
   }catch(e){ toast(r.title); }
   if(mark){ const d = day(); const k = remKey(r);
+    d.fired = d.fired || [];
     if(!d.fired.includes(k)){ d.fired.push(k); save(); } }
 }
 
@@ -2104,7 +2116,7 @@ function tick(){
   const d = day(), now = nowMin();
   for(const r of remindersToday()){
     const t = toMin(r.at);
-    if(now >= t && now - t < 50 && !d.fired.includes(remKey(r)) && !isDone(r)) fire(r);
+    if(now >= t && now - t < 50 && !(d.fired || []).includes(remKey(r)) && !isDone(r)) fire(r);
   }
 }
 function drawDialSafe(){ if($("#p-home").classList.contains("on")) drawDial(); }
@@ -2399,12 +2411,32 @@ async function initFirebase(){
   }catch(e){ console.warn("Firebase indisponible", e); return false; }
 }
 
+/** Une version plus ancienne créait des journées vides pour les jours à venir.
+ *  On les retire au chargement : elles ne servent à rien et brouillent la base. */
+function menage(){
+  const auj = todayKey();
+  let n = 0;
+  for(const k of Object.keys(S.days || {})){
+    if(k <= auj) continue;
+    const d = S.days[k];
+    const vide = !d || (!d.water && !d.pauses && !d.quran && !d.tasbih
+      && d.mood == null && !d.sleep && !d.note
+      && !Object.keys(d.meals || {}).length
+      && !(d.fired || []).length && !(d.seen || []).length);
+    if(vide){ delete S.days[k]; n++; }
+  }
+  return n;
+}
+
 let unsub = null;
 async function pullCloud(uid){
   const ref = fb.doc(fb.db, "users", uid);
   try{
     const snap = await fb.getDoc(ref);
-    if(snap.exists()) S = Object.assign(structuredClone(DEFAULT_STATE), snap.data());
+    if(snap.exists()){
+      S = Object.assign(structuredClone(DEFAULT_STATE), snap.data());
+      if(menage()) save();
+    }
     else { S = structuredClone(DEFAULT_STATE); await fb.setDoc(ref, S); }
     syncState("ok");
   }catch(e){ console.warn("pull", e); syncState("err"); }
