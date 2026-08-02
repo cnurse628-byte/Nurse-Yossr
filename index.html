@@ -403,7 +403,7 @@ a{color:var(--accent)}
 .note-item .txt{flex:1;font-size:14.5px;min-width:0}
 .note-item .txt .lbl{display:block;word-break:break-word}
 /* le rappel d'une note : deuxième ligne, discrète, et cliquable pour la régler */
-.note-item .when{display:inline-flex;align-items:center;gap:5px;margin-top:4px;
+.note-item .when{display:inline-block;margin-top:4px;line-height:1.5;text-align:left;
   font-size:11.5px;font-weight:600;color:var(--mute);background:transparent;padding:0}
 .note-item .when.set{color:var(--head)}
 .note-item .when.late{color:var(--accent)}
@@ -757,6 +757,10 @@ a{color:var(--accent)}
           <button class="pill" data-rep="sem">Chaque semaine</button>
           <button class="pill" data-rep="travail">Jours de travail</button>
         </div>
+        <div class="item" style="margin-top:6px;border-bottom:none">
+          <div class="name"><b>Insister</b><span>3 relances, toutes les 30 min, jusqu'à ce que ce soit coché</span></div>
+          <div class="sw" id="n-insiste"></div>
+        </div>
       </div>
       <div class="sub hidden" id="n-hint" style="margin-top:8px"></div>
       <button class="btn solid wide" id="n-add">Ajouter</button>
@@ -857,7 +861,7 @@ const FIREBASE_CONFIG = {
 const VAPID_KEY = "BHF4uyKx2qXYuDTYFraniyKXRA2nac0o_AOp5WdL46onWZUI4ZTATnyZfi0AsL_7jVxXMrdiDmiYyFCNuhNd2q0";
 
 const FB_READY = !FIREBASE_CONFIG.apiKey.startsWith("COLLE");
-const APP_VERSION = "3.10.0";  // doit être identique à VERSION dans sw.js
+const APP_VERSION = "3.11.0";  // doit être identique à VERSION dans sw.js
 
 /* ============================================================
    2) OUTILS
@@ -895,7 +899,7 @@ const DEFAULT_STATE = {
               6:{off:false,start:"08:00",end:"14:00"} },
   gardes: {},          // "2026-08-03": {start:"14:00", end:"08:00"}
   days:   {},          // "2026-08-01": {...}
-  notes:  [],          // {id, text, done, date, time, rep, fait} — rappel facultatif
+  notes:  [],          // {id, text, done, date, time, rep, fait, insiste} — rappel facultatif
   fcmToken: null,
   fcmTokens: [],
   push: null,          // plan lu par le serveur
@@ -1117,8 +1121,11 @@ function remindersToday(){
     if(!noteTombeLe(n, jourNote)) return;
     if(n.rep ? n.fait === jourNote : n.done) return;
     const [nt, nb] = L().note(n.text);
-    out.push({ id:"note-" + n.id, type:"note", at:n.time, title:nt, body:nb,
-               page:"p-notes", note:n.id, jour:jourNote });
+    heuresNote(n, jourNote).forEach((t, i) => {
+      out.push({ id:"note-" + n.id + (i ? "-r" + i : ""), type:"note", at:t,
+                 title:nt, body: i ? "Toujours dans ta liste. Coche-la quand c'est fait." : nb,
+                 page:"p-notes", note:n.id, jour:jourNote, relance:i > 0 });
+    });
   });
 
   const [mt1, mb1] = L().mood;
@@ -1129,6 +1136,10 @@ function remindersToday(){
   }
   return out.sort((a,b) => toMin(a.at) - toMin(b.at));
 }
+
+/** Ce qu'on montre : cadran, cloche, compteurs. Les relances sont une
+ *  mécanique d'envoi, pas des lignes de plus dans sa journée. */
+const remindersVisibles = () => remindersToday().filter(r => !r.relance);
 
 function isDone(r){
   const d = day();
@@ -1236,7 +1247,7 @@ const degOf = min => (((min % 1440) + 1440) % 1440) / 1440 * 360;
 
 function drawDial(){
   const C = 120, R = 100, Ri = 78;
-  const sh = shiftFor(), p = progress(), rems = remindersToday(), now = nowMin();
+  const sh = shiftFor(), p = progress(), rems = remindersVisibles(), now = nowMin();
   let g = "";
 
   // ---- cadran 24 h : le tour du cadran = une journée ----
@@ -1283,7 +1294,7 @@ function drawClock(){
   const e = $("#clock-now"); if(!e) return;
   e.textContent = pad(d.getHours()) + ":" + pad(d.getMinutes());
 
-  const reste = remindersToday().filter(r => remStatus(r) === "todo").length;
+  const reste = remindersVisibles().filter(r => remStatus(r) === "todo").length;
   const tard  = lateCount();
   $("#clock-sub").textContent = tard ? tard + " en retard"
     : reste ? reste + " à venir" : "rien à faire ✓";
@@ -1552,6 +1563,31 @@ function derniereOccurrence(n){
   return "";
 }
 
+/* Une note « insiste » : si elle n'est pas cochée, le rappel revient.
+   Trois fois, toutes les demi-heures. Au-delà c'est du harcèlement. */
+const RELANCE_MIN = 30, RELANCE_MAX = 3;
+
+/** Toutes les heures d'envoi d'une note ce jour-là : l'heure prévue, puis
+ *  les relances. On s'arrête au coucher — sauf pendant une garde, où elle est
+ *  debout — et jamais après minuit, le plan étant rangé par journée. */
+function heuresNote(n, k){
+  const out = [n.time];
+  if(!n.insiste) return out;
+  // elle a répondu « vu » dans la cloche : ce n'est plus la peine d'insister
+  if((((S.days || {})[k] || {}).seen || []).includes("note-" + n.id + "@" + n.time)) return out;
+
+  const sh = shiftFor(k), bed = toMin(S.profile.bed);
+  // un coucher après minuit ne peut pas servir de limite dans la journée
+  const limite = ((!sh.off && sh.garde) || bed < toMin(S.profile.wake)) ? 1439 : bed;
+  const t0 = toMin(n.time);
+  for(let i = 1; i <= RELANCE_MAX; i++){
+    const t = t0 + i * RELANCE_MIN;
+    if(t > limite) break;
+    out.push(toHM(t));
+  }
+  return out;
+}
+
 /** Cochée ? Pour une note qui se répète, seule l'occurrence en cours compte. */
 const noteFaite = n => n.rep ? (!!n.fait && n.fait === derniereOccurrence(n)) : !!n.done;
 
@@ -1600,7 +1636,7 @@ function renderNotes(){
   $("#n-list").innerHTML = l.length ? l.map((n,i) => {
     const fait = noteFaite(n), tard = noteEnRetard(n);
     const quand = (n.date && n.time)
-      ? `<button class="when set ${tard?"late":""}" data-rem="${n.id}">${n.rep?"🔁":"⏰"} ${labelRappel(n)}${tard?" · en retard":""}</button>`
+      ? `<button class="when set ${tard?"late":""}" data-rem="${n.id}">${n.rep?"🔁":"⏰"} ${labelRappel(n)}${n.insiste?" · insiste":""}${tard?" · en retard":""}</button>`
       : `<button class="when" data-rem="${n.id}">🔔 Ajouter un rappel</button>`;
     return `
     <div class="note-item ${fait?"done":""}">
@@ -1641,21 +1677,29 @@ function openNoteRappel(id){
       ${REPETITIONS.map(([v, mot]) =>
         `<button class="pill ${(n.rep || "") === v ? "on" : ""}" data-rep="${v}">${mot}</button>`).join("")}
     </div>
-    <div class="sub" id="nr-hint" style="margin-top:10px"></div>
+    <div class="item" style="margin-top:6px;border-bottom:none">
+      <div class="name"><b>Insister</b><span>3 relances, toutes les 30 min, jusqu'à ce que ce soit coché</span></div>
+      <div class="sw ${n.insiste ? "on" : ""}" id="nr-insiste"></div>
+    </div>
+    <div class="sub" id="nr-hint"></div>
     <button class="btn solid wide" id="nr-ok">Enregistrer le rappel</button>
     ${n.date ? `<button class="btn wide" id="nr-off">Retirer le rappel</button>` : ""}`);
 
-  let rep = n.rep || "";
+  let rep = n.rep || "", ins = !!n.insiste;
   const majNr = () => {
     // la date sert de point de départ ; pour « chaque semaine » elle fixe le jour
     $("#nr-hint").textContent = labelRappel({ date:$("#nr-date").value, time:$("#nr-time").value, rep })
-      + (rep ? " — à partir du " + $("#nr-date").value : "");
+      + (rep ? " — à partir du " + $("#nr-date").value : "")
+      + (ins ? " · relancé jusqu'à ce que ce soit coché" : "");
   };
   $$("#nr-rep .pill").forEach(b => b.addEventListener("click", () => {
     rep = b.dataset.rep;
     $$("#nr-rep .pill").forEach(x => x.classList.toggle("on", x.dataset.rep === rep));
     majNr();
   }));
+  $("#nr-insiste").addEventListener("click", () => {
+    ins = !ins; $("#nr-insiste").classList.toggle("on", ins); majNr();
+  });
   $("#nr-date").addEventListener("change", majNr);
   $("#nr-time").addEventListener("change", majNr);
   majNr();
@@ -1663,7 +1707,7 @@ function openNoteRappel(id){
   $("#nr-ok").addEventListener("click", async () => {
     const d = $("#nr-date").value, t = $("#nr-time").value;
     if(!d || !t) return toast("Choisis la date et l'heure");
-    n.date = d; n.time = t; n.rep = rep; n.done = false; n.fait = "";
+    n.date = d; n.time = t; n.rep = rep; n.insiste = ins; n.done = false; n.fait = "";
     closeSheet(); renderNotes(); bellBadge();
     await confirmerRappel((!rep && quandPasse(d, t))
       ? "Enregistré — mais cette heure est déjà passée"
@@ -1671,7 +1715,7 @@ function openNoteRappel(id){
   });
   const off = $("#nr-off");
   if(off) off.addEventListener("click", async () => {
-    n.date = ""; n.time = ""; n.rep = ""; n.fait = "";
+    n.date = ""; n.time = ""; n.rep = ""; n.fait = ""; n.insiste = false;
     closeSheet(); renderNotes(); bellBadge();
     await confirmerRappel("Rappel retiré");
   });
@@ -1909,13 +1953,14 @@ $("#n-input").addEventListener("keydown", e => e.key === "Enter" && addNote());
 /* Le petit sélecteur au-dessus du bouton Ajouter. */
 let N_QUAND = "non";                      // "non" | "oui"
 let N_REP   = "";                         // "" | "jour" | "sem" | "travail"
+let N_INS   = false;                      // relancer si elle ne coche pas
 
 function setNoteQuand(mode){
   const avant = N_QUAND;
   N_QUAND = mode;
   $$("#n-when .pill").forEach(b => b.classList.toggle("on", b.dataset.when === mode));
   $("#n-when-row").classList.toggle("hidden", mode === "non");
-  if(mode === "non") setNoteRep("");
+  if(mode === "non"){ setNoteRep(""); setNoteIns(false); }
   // on ne repose les valeurs par défaut qu'en arrivant : sinon un deuxième
   // appui sur « Planifier » effacerait la date qu'elle vient de choisir.
   else if(avant === "non" || !$("#n-date").value || !$("#n-time").value){
@@ -1930,6 +1975,11 @@ function setNoteRep(r){
   N_REP = r;
   $$("#n-rep .pill").forEach(b => b.classList.toggle("on", b.dataset.rep === r));
   majHintNote();
+}
+
+function setNoteIns(v){
+  N_INS = !!v;
+  $("#n-insiste").classList.toggle("on", N_INS);
 }
 
 /** Le message sous le formulaire dit une chose à la fois, dans cet ordre :
@@ -1951,17 +2001,18 @@ function majHintNote(){
 
 $$("#n-when .pill").forEach(b => b.addEventListener("click", () => setNoteQuand(b.dataset.when)));
 $$("#n-rep .pill").forEach(b => b.addEventListener("click", () => setNoteRep(b.dataset.rep)));
+$("#n-insiste").addEventListener("click", () => setNoteIns(!N_INS));
 $("#n-date").addEventListener("change", majHintNote);
 $("#n-time").addEventListener("change", majHintNote);
 
 async function addNote(){
   const v = $("#n-input").value.trim(); if(!v) return;
-  const n = { id:noteId(), text:v, done:false, date:"", time:"", rep:"", fait:"" };
+  const n = { id:noteId(), text:v, done:false, date:"", time:"", rep:"", fait:"", insiste:false };
 
   if(N_QUAND !== "non"){
     const d = $("#n-date").value, t = $("#n-time").value;
     if(!d || !t) return toast("Choisis la date et l'heure du rappel");
-    n.date = d; n.time = t; n.rep = N_REP;
+    n.date = d; n.time = t; n.rep = N_REP; n.insiste = N_INS;
   }
   S.notes.unshift(n);
   $("#n-input").value = "";
@@ -2029,7 +2080,7 @@ function remStatus(r){
   if((day().seen || []).includes(remKey(r))) return "seen";
   return toMin(r.at) <= nowMin() ? "late" : "todo";
 }
-function lateCount(){ return remindersToday().filter(r => remStatus(r) === "late").length; }
+function lateCount(){ return remindersVisibles().filter(r => remStatus(r) === "late").length; }
 function markSeen(ids){
   const d = day();
   d.seen = [...new Set([...(d.seen || []), ...ids])];
@@ -2051,7 +2102,7 @@ function closeSheet(){ $("#sheet").classList.remove("on"); }
 
 const REM_ICON = { eau:"💧", repas:"🍽️", pause:"🧘", mood:"💗", sleep:"🌙", coran:"📖", note:"📝" };
 function openBell(){
-  const rems = remindersToday();
+  const rems = remindersVisibles();
   const order = { late:0, todo:1, seen:2, done:3 };
   const rows = rems.map(r => ({ r, s:remStatus(r) }))
                    .sort((a,b) => order[a.s] - order[b.s] || toMin(a.r.at) - toMin(b.r.at));
@@ -2090,7 +2141,7 @@ function openBell(){
   }));
   const clr = $("#rem-clear");
   if(clr) clr.addEventListener("click", () => {
-    markSeen(remindersToday().filter(r => remStatus(r) === "late").map(remKey));
+    markSeen(remindersVisibles().filter(r => remStatus(r) === "late").map(remKey));
     openBell(); toast("C'est noté 🌸");
   });
   const allow = $("#bell-allow");
