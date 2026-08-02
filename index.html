@@ -84,8 +84,7 @@ button{border:none;background:none;cursor:pointer}
   transition:d .9s cubic-bezier(.2,.9,.2,1)}
 .dial .prog-bg{fill:none;stroke:var(--ring-bg);stroke-width:9}
 .dial .tick-h{stroke:var(--border);stroke-width:1.5;stroke-linecap:round}
-.dial .hand-h{stroke:var(--head);stroke-width:4;stroke-linecap:round}
-.dial .hand-m{stroke:var(--accent);stroke-width:2.5;stroke-linecap:round}
+.dial-center .pct{position:relative;z-index:2}
 .dial .tick{stroke:var(--border);stroke-width:2}
 .dial .hour{fill:var(--mute);font-size:10px;font-weight:600;font-family:"Instrument Sans";text-anchor:middle}
 .dial .needle{stroke:var(--head);stroke-width:2.5;stroke-linecap:round}
@@ -338,6 +337,26 @@ a{color:var(--accent)}
 .diag span{font-size:12.5px;color:var(--mute);line-height:1.55}
 .dot-sync.off{background:var(--mute)}
 
+/* ---------- lecteur de livres ---------- */
+.bk-item{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--border)}
+.bk-item:last-child{border-bottom:none}
+.bk-item .ico{font-size:24px;flex:none}
+.bk-item .b{flex:1;min-width:0}
+.bk-item .b b{display:block;font-size:14px;color:var(--head);font-weight:600;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bk-item .b span{font-size:11.5px;color:var(--mute)}
+.bk-bar{display:flex;align-items:center;gap:10px;padding:6px 2px 12px}
+.bk-title{flex:1;min-width:0;font-family:"Bricolage Grotesque",sans-serif;font-weight:800;
+  font-size:16px;color:var(--head);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bk-stage{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);
+  overflow:auto;-webkit-overflow-scrolling:touch;display:grid;place-items:start center;
+  min-height:60vh;padding:8px}
+.bk-stage canvas{max-width:100%;height:auto;display:block;border-radius:6px}
+.bk-ctrl{display:flex;align-items:center;gap:10px;margin-top:12px}
+.bk-ctrl .btn{padding:12px 18px;font-size:17px;flex:none}
+.bk-ctrl input[type=range]{flex:1;margin:0}
+.bk-load{display:grid;place-items:center;min-height:60vh;color:var(--mute);font-size:13.5px;text-align:center;line-height:1.7}
+
 /* ---------- misc ---------- */
 .quote{background:var(--accent-soft);border:none;border-radius:var(--r);padding:20px}
 .quote p{margin:0;font-family:"Bricolage Grotesque";font-weight:600;font-size:16px;line-height:1.45;color:var(--head)}
@@ -540,6 +559,38 @@ a{color:var(--accent)}
     </div>
   </section>
 
+  <!-- LIVRES -->
+  <section class="page" id="p-book">
+    <div id="bk-lib">
+      <div class="topbar"><div><h1>Livres</h1><div class="date">Tes PDF, lisibles hors connexion</div></div>
+        <div class="chip" id="bk-count">0</div></div>
+      <div class="card">
+        <label class="btn solid wide" for="bk-file" style="display:block;text-align:center;cursor:pointer">
+          Ajouter un PDF</label>
+        <input type="file" id="bk-file" accept="application/pdf,.pdf" hidden>
+        <div class="sub" style="margin-top:12px">Les livres restent sur ce téléphone : ils ne
+          partent pas dans ton compte. Ta page de lecture, elle, te suit.</div>
+        <div class="bar" style="margin-top:14px"><i id="bk-bar"></i></div>
+        <div class="sub" id="bk-space" style="margin-top:8px">—</div>
+      </div>
+      <div class="card"><h2>Ma bibliothèque</h2><div id="bk-list"></div></div>
+    </div>
+
+    <div id="bk-read" class="hidden">
+      <div class="bk-bar">
+        <button class="ic" id="bk-close" aria-label="Fermer">✕</button>
+        <div class="bk-title" id="bk-name">—</div>
+        <div class="chip" id="bk-pos">—</div>
+      </div>
+      <div class="bk-stage" id="bk-stage"><canvas id="bk-canvas"></canvas></div>
+      <div class="bk-ctrl">
+        <button class="btn" id="bk-prev">←</button>
+        <input type="range" id="bk-slider" min="1" max="1" value="1">
+        <button class="btn" id="bk-next">→</button>
+      </div>
+    </div>
+  </section>
+
   <!-- NOTES -->
 
   <!-- SOMMEIL -->
@@ -732,7 +783,7 @@ const FIREBASE_CONFIG = {
 const VAPID_KEY = "BHF4uyKx2qXYuDTYFraniyKXRA2nac0o_AOp5WdL46onWZUI4ZTATnyZfi0AsL_7jVxXMrdiDmiYyFCNuhNd2q0";
 
 const FB_READY = !FIREBASE_CONFIG.apiKey.startsWith("COLLE");
-const APP_VERSION = "3.4.0";   // doit être identique à VERSION dans sw.js
+const APP_VERSION = "3.5.2";   // doit être identique à VERSION dans sw.js
 
 /* ============================================================
    2) OUTILS
@@ -774,6 +825,7 @@ const DEFAULT_STATE = {
   fcmToken: null,
   fcmTokens: [],
   push: null,          // plan lu par le serveur
+  livres: {},          // où elle en est dans chaque livre
   serveurVu: 0,        // dernière fois que le serveur a tourné
   onboarded: false
 };
@@ -1059,7 +1111,6 @@ const degOf = min => (((min % 1440) + 1440) % 1440) / 1440 * 360;
 function drawDial(){
   const C = 120, R = 100, Ri = 78;
   const sh = shiftFor(), p = progress(), rems = remindersToday(), now = nowMin();
-  const d = new Date();
   let g = "";
 
   // ---- cadran 24 h : le tour du cadran = une journée ----
@@ -1095,16 +1146,6 @@ function drawDial(){
       <title>${ico} ${r.at}</title></g>`;
   });
 
-  // ---- aiguilles ----
-  const mDeg = d.getMinutes() * 6 + d.getSeconds() * 0.1;
-  const hDeg = (d.getHours() % 12) * 30 + d.getMinutes() * 0.5;
-  const [hx,hy] = POL(C,C,Ri-30,hDeg);
-  const [mx,my] = POL(C,C,Ri-14,mDeg);
-  g += `<line class="hand-h" x1="${C}" y1="${C}" x2="${hx.toFixed(1)}" y2="${hy.toFixed(1)}"/>`;
-  g += `<line class="hand-m" x1="${C}" y1="${C}" x2="${mx.toFixed(1)}" y2="${my.toFixed(1)}"/>`;
-  g += `<circle cx="${C}" cy="${C}" r="4" fill="var(--head)"/>`;
-  g += `<circle cx="${C}" cy="${C}" r="1.6" fill="var(--surface)"/>`;
-
   $("#dial").innerHTML = g;
   $$("#dial .dot").forEach(el => el.addEventListener("click", () => go(el.dataset.page)));
   drawClock();
@@ -1132,8 +1173,8 @@ const TABS = [
   ["p-home",  "🏠", "Accueil"], ["p-water", "💧", "Eau"],
   ["p-meals", "🍽️", "Repas"],   ["p-mood",  "💗", "Humeur"],
   ["p-sleep", "🌙", "Sommeil"], ["p-dhikr", "📖", "Coran"],
-  ["p-relax", "🧘", "Détente"], ["p-notes", "📝", "Notes"],
-  ["p-set",   "⚙️", "Réglages"]
+  ["p-relax", "🧘", "Détente"], ["p-book",  "📚", "Livres"],
+  ["p-notes", "📝", "Notes"],   ["p-set",   "⚙️", "Réglages"]
 ];
 $("#tabs").innerHTML = TABS.map(([id, e, t]) =>
   `<button data-go="${id}"><span class="e">${e}</span>${t}</button>`).join("");
@@ -1378,6 +1419,7 @@ function render(id){
   ({ "p-home":renderHome, "p-water":renderWater, "p-meals":renderMeals, "p-mood":renderMood,
      "p-sleep":renderSleep, "p-notes":renderNotes, "p-relax":renderRelax,
      "p-dhikr":() => { renderDhikr(); renderRappels(); },
+     "p-book":renderBooks,
      "p-set":() => { renderSet(); renderSched(); renderRappels(); }
    }[id] || (()=>{}))();
   bellBadge();
@@ -1662,6 +1704,177 @@ $("#btn-bell").addEventListener("click", () => {
   setTimeout(() => $("#btn-bell").classList.remove("ring"), 1100);
   openBell();
 });
+
+/* ============================================================
+   10 ter) LES LIVRES — lecteur PDF
+   Les fichiers restent dans le téléphone (IndexedDB) : un PDF pèse
+   trop lourd pour le compte, et ça marche sans connexion.
+   Seule la page où elle en est part dans le compte.
+   ============================================================ */
+const PDFJS_V = "3.11.174";
+const PDFJS   = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDFJS_V}/pdf.min.js`;
+let pdfLib = null;
+
+function chargerPdfJs(){
+  if(pdfLib) return Promise.resolve(pdfLib);
+  if(window.pdfjsLib){ pdfLib = window.pdfjsLib; return Promise.resolve(pdfLib); }
+  return new Promise((res, rej) => {
+    const s = document.createElement("script");
+    s.src = PDFJS;
+    s.onload = () => {
+      pdfLib = window.pdfjsLib;
+      pdfLib.GlobalWorkerOptions.workerSrc =
+        `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDFJS_V}/pdf.worker.min.js`;
+      res(pdfLib);
+    };
+    s.onerror = () => rej(new Error("réseau"));
+    document.head.appendChild(s);
+  });
+}
+
+/* ---- rangement dans le téléphone ---- */
+function base(){
+  return new Promise((res, rej) => {
+    const r = indexedDB.open("yossr-livres", 1);
+    r.onupgradeneeded = () => r.result.createObjectStore("livres", { keyPath:"id" });
+    r.onsuccess = () => res(r.result);
+    r.onerror   = () => rej(r.error);
+  });
+}
+function tx(mode, fn){
+  return base().then(db => new Promise((res, rej) => {
+    const t = db.transaction("livres", mode);
+    const q = fn(t.objectStore("livres"));
+    q.onsuccess = () => res(q.result);
+    q.onerror   = () => rej(q.error);
+  }));
+}
+const livresListe = ()   => tx("readonly",  s => s.getAll());
+const livreLire   = id   => tx("readonly",  s => s.get(id));
+const livreMettre = rec  => tx("readwrite", s => s.put(rec));
+const livreOter   = id   => tx("readwrite", s => s.delete(id));
+
+const poids = o => o < 1048576 ? Math.round(o/1024) + " Ko" : (o/1048576).toFixed(1) + " Mo";
+
+const mo = o => o < 1073741824 ? Math.round(o/1048576) + " Mo" : (o/1073741824).toFixed(1) + " Go";
+
+async function espaceLivres(liste){
+  const e = $("#bk-space"), b = $("#bk-bar"); if(!e) return;
+  // on compte les livres eux-mêmes : le navigateur met du temps à
+  // recalculer son estimation, et il affichait un chiffre faux.
+  const pris = (liste || []).reduce((n, x) => n + (x.taille || 0), 0);
+  let quota = 0;
+  try{ ({ quota = 0 } = await navigator.storage.estimate()); }catch(err){}
+  b.style.width = quota ? Math.max(1, Math.min(100, pris / quota * 100)) + "%" : "0%";
+  e.textContent = quota
+    ? `${mo(pris)} de livres · ${mo(quota)} disponibles sur ce téléphone`
+    : `${mo(pris)} de livres`;
+}
+
+async function renderBooks(){
+  fermerLivre();
+  let l = [];
+  try{ l = await livresListe(); }catch(e){ console.warn("livres", e); }
+  l.sort((a,b) => b.at - a.at);
+  espaceLivres(l);
+  $("#bk-count").textContent = l.length;
+  $("#bk-list").innerHTML = l.length ? l.map(x => {
+    const p = S.livres?.[x.id];
+    const où = p && p.total ? `page ${p.page} sur ${p.total}` : "jamais ouvert";
+    return `<div class="bk-item">
+      <div class="ico">📕</div>
+      <div class="b" data-open="${x.id}"><b>${escapeHtml(x.nom)}</b><span>${poids(x.taille)} · ${où}</span></div>
+      <button class="del" data-drop="${x.id}" aria-label="Supprimer">✕</button></div>`;
+  }).join("") : `<div class="empty">Aucun livre.<br>Ajoute un PDF pour le lire ici, même sans réseau.</div>`;
+
+  $$("#bk-list [data-open]").forEach(b => b.addEventListener("click", () => ouvrirLivre(b.dataset.open)));
+  $$("#bk-list [data-drop]").forEach(b => b.addEventListener("click", async () => {
+    if(!confirm("Retirer ce livre du téléphone ?")) return;
+    await livreOter(b.dataset.drop); renderBooks(); toast("Livre retiré");
+  }));
+}
+
+$("#bk-file").addEventListener("change", async e => {
+  const f = e.target.files[0]; e.target.value = "";
+  if(!f) return;
+  if(!/pdf$/i.test(f.name) && f.type !== "application/pdf") return toast("Choisis un fichier PDF");
+  toast("Ajout du livre…");
+  try{
+    await livreMettre({ id:"l_" + Date.now(), nom:f.name.replace(/\.pdf$/i,""),
+                        taille:f.size, at:Date.now(), blob:f });
+    renderBooks(); toast("Ajouté 📚");
+  }catch(err){ console.warn(err); toast("Le téléphone a refusé : fichier trop lourd ?"); }
+});
+
+/* ---- lecture ---- */
+let doc = null, pageNum = 1, livreId = null, rendu = false;
+
+async function ouvrirLivre(id){
+  const rec = await livreLire(id);
+  if(!rec) return toast("Livre introuvable");
+  livreId = id;
+  $("#bk-lib").classList.add("hidden");
+  $("#bk-read").classList.remove("hidden");
+  $("#bk-name").textContent = rec.nom;
+  $("#bk-stage").innerHTML = `<div class="bk-load">Ouverture du livre…</div>`;
+
+  try{
+    const lib = await chargerPdfJs();
+    const buf = await rec.blob.arrayBuffer();
+    doc = await lib.getDocument({ data:buf }).promise;
+  }catch(e){
+    $("#bk-stage").innerHTML = `<div class="bk-load">Impossible d'ouvrir ce livre.<br>
+      ${e.message === "réseau" ? "Le lecteur a besoin d'internet la première fois." : "Le fichier est peut-être abîmé."}</div>`;
+    return;
+  }
+
+  $("#bk-stage").innerHTML = `<canvas id="bk-canvas"></canvas>`;
+  const mem = S.livres?.[id];
+  pageNum = clamp(mem?.page || 1, 1, doc.numPages);
+  $("#bk-slider").max = doc.numPages;
+  dessinerPage();
+}
+
+async function dessinerPage(){
+  if(!doc || rendu) return;
+  rendu = true;
+  try{
+    const page = await doc.getPage(pageNum);
+    const cv = $("#bk-canvas"); if(!cv){ rendu = false; return; }
+    const large = $("#bk-stage").clientWidth - 16;
+    const v1 = page.getViewport({ scale:1 });
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const vp = page.getViewport({ scale: (large / v1.width) * dpr });
+    cv.width = vp.width; cv.height = vp.height;
+    cv.style.width = large + "px";
+    await page.render({ canvasContext: cv.getContext("2d"), viewport: vp }).promise;
+    $("#bk-stage").scrollTop = 0;
+  }catch(e){ console.warn("page", e); }
+  rendu = false;
+
+  $("#bk-pos").textContent = pageNum + " / " + doc.numPages;
+  $("#bk-slider").value = pageNum;
+  S.livres = S.livres || {};
+  S.livres[livreId] = { page:pageNum, total:doc.numPages, at:Date.now() };
+  save();
+}
+
+function allerPage(n){
+  if(!doc) return;
+  const v = clamp(n, 1, doc.numPages);
+  if(v === pageNum) return;
+  pageNum = v; dessinerPage();
+}
+$("#bk-prev").addEventListener("click",  () => allerPage(pageNum - 1));
+$("#bk-next").addEventListener("click",  () => allerPage(pageNum + 1));
+$("#bk-slider").addEventListener("change", e => allerPage(+e.target.value));
+$("#bk-close").addEventListener("click", () => { fermerLivre(); renderBooks(); });
+
+function fermerLivre(){
+  doc = null; livreId = null;
+  $("#bk-read")?.classList.add("hidden");
+  $("#bk-lib")?.classList.remove("hidden");
+}
 
 /* ============================================================
    11) NOTIFICATIONS
@@ -2143,7 +2356,11 @@ $("#au-forgot").addEventListener("click", async () => {
   const m = $("#au-mail").value.trim();
   if(!m.includes("@")) return say("Écris d'abord ton email, puis retouche ce bouton.", "err");
   if(!fb) return;
-  try{ await fb.reset(fb.auth, m); say("Email envoyé. Regarde ta boîte de réception 🌸", "ok"); }
+  try{
+    await fb.reset(fb.auth, m);
+    say("Si un compte existe avec cet email, le message est parti. "
+      + "Regarde aussi tes spams — il vient de noreply@nurse-yossr.firebaseapp.com 🌸", "ok");
+  }
   catch(e){ say(AUTH_ERR[e.code] || "Envoi impossible pour l'instant.", "err"); }
 });
 
