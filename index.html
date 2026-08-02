@@ -715,7 +715,7 @@ const FIREBASE_CONFIG = {
 const VAPID_KEY = "BHF4uyKx2qXYuDTYFraniyKXRA2nac0o_AOp5WdL46onWZUI4ZTATnyZfi0AsL_7jVxXMrdiDmiYyFCNuhNd2q0";
 
 const FB_READY = !FIREBASE_CONFIG.apiKey.startsWith("COLLE");
-const APP_VERSION = "3.1.0";   // doit être identique à VERSION dans sw.js
+const APP_VERSION = "3.2.0";   // doit être identique à VERSION dans sw.js
 
 /* ============================================================
    2) OUTILS
@@ -782,6 +782,29 @@ function day(k = activeKey()){
    l'app marche sans réseau ; dès que la connexion revient, il envoie tout. */
 let saveTimer = null;
 let planTimer = null;
+
+function paquet(){
+  const t = structuredClone(S);
+  const keys = Object.keys(t.days).sort().slice(-180);   // on garde 6 mois
+  t.days = Object.fromEntries(keys.map(k => [k, t.days[k]]));
+  t.updatedAt = Date.now();
+  return t;
+}
+
+/** Envoi immédiat, et on sait quand le serveur a vraiment reçu.
+ *  Important : tant que ça n'a pas abouti, le serveur travaille encore
+ *  sur l'ancien plan — et un rappel modifié ne partirait pas. */
+async function saveNow(){
+  if(!fb || !UID) return false;
+  clearTimeout(saveTimer); clearTimeout(planTimer);
+  try{ buildPlan(); }catch(e){ console.warn("plan", e); }
+  syncState("wait");
+  try{
+    await fb.setDoc(fb.doc(fb.db, "users", UID), paquet());
+    syncState("ok"); return true;
+  }catch(e){ console.warn("save", e); syncState("err"); return false; }
+}
+
 function save(){
   if(!fb || !UID) return;
   clearTimeout(planTimer);
@@ -790,15 +813,17 @@ function save(){
   clearTimeout(saveTimer);
   saveTimer = setTimeout(async () => {
     try{
-      const t = structuredClone(S);
-      const keys = Object.keys(t.days).sort().slice(-180);   // on garde 6 mois
-      t.days = Object.fromEntries(keys.map(k => [k, t.days[k]]));
-      t.updatedAt = Date.now();
-      await fb.setDoc(fb.doc(fb.db, "users", UID), t);
+      await fb.setDoc(fb.doc(fb.db, "users", UID), paquet());
       syncState("ok");
     }catch(e){ console.warn("save", e); syncState("err"); }
-  }, 700);
+  }, 500);
 }
+
+/* Quand elle quitte l'app, on pousse tout de suite ce qui attend. */
+window.addEventListener("pagehide", () => { if(SYNC !== "ok") saveNow(); });
+document.addEventListener("visibilitychange", () => {
+  if(document.hidden && SYNC !== "ok") saveNow();
+});
 let SYNC = "ok";
 function syncState(s){
   SYNC = s;
@@ -1459,10 +1484,10 @@ $("#preset-fixe").addEventListener("click", () => {
 $("#preset-clear").addEventListener("click", () => {
   [0,1,2,3,4,5,6].forEach(i => S.schedule[i].off = true); save(); renderSched();
 });
-$("#g-add").addEventListener("click", () => {
+$("#g-add").addEventListener("click", async () => {
   const dt = $("#g-date").value; if(!dt) return toast("Choisis une date");
   S.gardes[dt] = { start:$("#g-start").value, end:$("#g-end").value };
-  save(); renderSched(); toast("Garde ajoutée. Les rappels s'adaptent.");
+  renderSched(); await confirmerRappel();
 });
 $("#sw-garde").addEventListener("click", () => {
   const k = todayKey();
@@ -1471,13 +1496,13 @@ $("#sw-garde").addEventListener("click", () => {
   save(); applyTheme(); renderSched(); renderSet();
 });
 
-$("#s-save").addEventListener("click", () => {
+$("#s-save").addEventListener("click", async () => {
   const p = profile();
   p.name = $("#s-name").value.trim() || p.name;
   p.weight = +$("#s-weight").value || p.weight;
   p.waterGoal = Math.round(p.weight * 35 / 50) * 50;
   p.wake = $("#s-wake").value || p.wake; p.bed = $("#s-bed").value || p.bed;
-  save(); renderSet(); hello(); toast("Profil enregistré");
+  renderSet(); hello(); await confirmerRappel();
 });
 $("#s-weight").addEventListener("input", e => {
   const w = +e.target.value;
@@ -1835,10 +1860,21 @@ $("#bq-go").addEventListener("click", () => {
 });
 $("#bq-done").addEventListener("click", () => setVerse(BQ_TOTAL()));
 $("#bq-reset").addEventListener("click", () => setVerse(0));
-$("#sw-bq").addEventListener("click", () => { S.quran.on = !S.quran.on; save(); renderRappels(); });
-$("#bq-time").addEventListener("change", e => {
-  S.quran.time = e.target.value || "07:30"; save(); renderRappels(); toast("Rappel à " + S.quran.time);
+$("#sw-bq").addEventListener("click", async () => {
+  S.quran.on = !S.quran.on; renderRappels(); await confirmerRappel();
 });
+$("#bq-time").addEventListener("change", async e => {
+  S.quran.time = e.target.value || "07:30"; renderRappels(); await confirmerRappel();
+});
+
+/** Enregistre et dit clairement quand le serveur est au courant :
+ *  avant ça, fermer l'app ferait perdre le changement. */
+async function confirmerRappel(){
+  toast("Enregistrement…", 8000);
+  const ok = await saveNow();
+  toast(ok ? "C'est enregistré ✓ tu peux fermer l'app"
+           : "Pas de réseau — garde l'app ouverte un instant", 3200);
+}
 
 /* ---- tasbih ---- */
 $("#tas-btn").addEventListener("click", () => {
@@ -1857,11 +1893,12 @@ $$("#tas-goals .pill").forEach(b => b.addEventListener("click", () => {
 $("#sw-dhikr").addEventListener("click", async () => {
   if(!S.profile.dhikrOn && Notification.permission !== "granted") await askNotif();
   S.profile.dhikrOn = !S.profile.dhikrOn;
-  S.profile.lastDhikr = 0; save(); renderRappels();
-  toast(S.profile.dhikrOn ? "Rappels de dhikr activés 📿" : "Rappels de dhikr coupés");
+  S.profile.lastDhikr = 0; renderRappels();
+  await confirmerRappel();
 });
-$$("#dh-every .pill").forEach(b => b.addEventListener("click", () => {
-  S.profile.dhikrEvery = +b.dataset.every; S.profile.lastDhikr = 0; save(); renderRappels();
+$$("#dh-every .pill").forEach(b => b.addEventListener("click", async () => {
+  S.profile.dhikrEvery = +b.dataset.every; S.profile.lastDhikr = 0; renderRappels();
+  await confirmerRappel();
 }));
 
 /* ============================================================
