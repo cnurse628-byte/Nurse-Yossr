@@ -686,6 +686,7 @@ a{color:var(--accent)}
       <h2>Données</h2>
       <button class="btn wide" id="btn-update">Vérifier les mises à jour</button>
       <div class="badge-note" id="cloud-state"><span class="dot-sync"></span>—</div>
+      <div class="badge-note" id="serveur-etat" style="margin-top:6px">—</div>
       <div class="badge-note" id="app-version" style="margin-top:6px">—</div>
     </div>
   </section>
@@ -715,7 +716,7 @@ const FIREBASE_CONFIG = {
 const VAPID_KEY = "BHF4uyKx2qXYuDTYFraniyKXRA2nac0o_AOp5WdL46onWZUI4ZTATnyZfi0AsL_7jVxXMrdiDmiYyFCNuhNd2q0";
 
 const FB_READY = !FIREBASE_CONFIG.apiKey.startsWith("COLLE");
-const APP_VERSION = "3.2.0";   // doit être identique à VERSION dans sw.js
+const APP_VERSION = "3.3.0";   // doit être identique à VERSION dans sw.js
 
 /* ============================================================
    2) OUTILS
@@ -757,6 +758,7 @@ const DEFAULT_STATE = {
   fcmToken: null,
   fcmTokens: [],
   push: null,          // plan lu par le serveur
+  serveurVu: 0,        // dernière fois que le serveur a tourné
   onboarded: false
 };
 let S = structuredClone(DEFAULT_STATE);
@@ -1308,6 +1310,13 @@ function renderSet(){
     : "Non disponibles sur ce navigateur";
   $("#set-account").textContent = fb?.auth?.currentUser?.email || "Compte";
   syncState(SYNC);
+  const vu = Number(S.serveurVu || 0);
+  const mn = vu ? Math.round((Date.now() - vu) / 60000) : null;
+  $("#serveur-etat").innerHTML = vu && serveurActif()
+    ? `<span class="dot-sync"></span>Serveur actif — vu il y a ${mn} min`
+    : `<span class="dot-sync off"></span>${vu
+        ? "Serveur silencieux depuis " + mn + " min — l'app prend le relais"
+        : "Serveur pas encore configuré — l'app envoie les rappels elle-même"}`;
   $("#app-version").textContent = "Version " + APP_VERSION;
 }
 
@@ -1690,8 +1699,16 @@ function dhikrTick(){
   fire({ id:"dhikr", title:d[0], body:"📿 " + d[1], page:"p-dhikr" }, false);
 }
 
+/** Le serveur a-t-il tourné récemment ? Si oui, c'est lui qui envoie :
+ *  l'app se tait, sinon chaque ouverture rejouerait ses rappels. */
+function serveurActif(){
+  return Date.now() - Number(S.serveurVu || 0) < 30 * 60 * 1000;
+}
+
 function tick(){
-  drawDialSafe(); bellBadge(); dhikrTick();
+  drawDialSafe(); bellBadge();
+  if(serveurActif()) return;        // le serveur s'en occupe
+  dhikrTick();
   if(!S.profile.notif) return;
   const d = day(), now = nowMin();
   for(const r of remindersToday()){
