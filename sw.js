@@ -1,4 +1,5 @@
-const VERSION = "2.4.0";        
+/* Nurse Yossr — service worker : cache offline + clic sur notification */
+const VERSION = "2.4.0";        // ← bouger ce numéro à chaque mise en ligne
 const CACHE = "yossr-" + VERSION;
 const ASSETS = ["./", "./index.html", "./manifest.json",
                 "./icons/icon-192.png", "./icons/icon-512.png"];
