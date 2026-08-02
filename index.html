@@ -318,6 +318,12 @@ a{color:var(--accent)}
   padding:14px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;
   color:var(--head);overflow-x:auto;white-space:pre;line-height:1.7;margin-top:12px}
 .dot-sync{width:8px;height:8px;border-radius:50%;background:var(--menthe);display:inline-block;margin-right:7px}
+.diag{display:flex;gap:11px;align-items:flex-start;margin:14px 0 4px}
+.diag i{width:10px;height:10px;border-radius:50%;flex:none;margin-top:5px;background:var(--mute)}
+.diag.ok i{background:var(--menthe)} .diag.err i{background:var(--accent)}
+.diag.wait i{background:#E8A33D}
+.diag b{display:block;font-size:14px;color:var(--head);font-weight:600;margin-bottom:3px}
+.diag span{font-size:12.5px;color:var(--mute);line-height:1.55}
 .dot-sync.off{background:var(--mute)}
 
 /* ---------- misc ---------- */
@@ -663,6 +669,13 @@ a{color:var(--accent)}
         <button class="pill" data-every="60">1 h</button>
       </div>
     </div>
+
+    <div class="card">
+      <h2>Rappels app fermée</h2>
+      <div class="sub">Pour recevoir les rappels même quand l'app n'est pas ouverte</div>
+      <div class="diag" id="push-state"><i></i><div><b>—</b><span>—</span></div></div>
+      <button class="btn wide" id="btn-push">Réessayer la connexion</button>
+    </div>
     <div class="card">
       <h2>Données</h2>
       <button class="btn wide" id="btn-update">Vérifier les mises à jour</button>
@@ -696,7 +709,7 @@ const FIREBASE_CONFIG = {
 const VAPID_KEY = "BHF4uyKx2qXYuDTYFraniyKXRA2nac0o_AOp5WdL46onWZUI4ZTATnyZfi0AsL_7jVxXMrdiDmiYyFCNuhNd2q0";
 
 const FB_READY = !FIREBASE_CONFIG.apiKey.startsWith("COLLE");
-const APP_VERSION = "2.4.0";   // doit être identique à VERSION dans sw.js
+const APP_VERSION = "2.5.0";   // doit être identique à VERSION dans sw.js
 
 /* ============================================================
    2) OUTILS
@@ -1262,8 +1275,22 @@ function renderDhikr(){
 
 }
 
+/* ---------- état des push (dans Réglages) ---------- */
+const FCM_TITLE = { ok:"Actif ✓", err:"Ça ne marche pas encore", wait:"Connexion…", off:"Pas encore activé", "…":"—" };
+function renderPush(){
+  const el = $("#push-state"); if(!el) return;
+  el.className = "diag " + FCM.state;
+  el.querySelector("b").textContent    = FCM_TITLE[FCM.state] || FCM.state;
+  el.querySelector("span").textContent = FCM.detail;
+}
+$("#btn-push").addEventListener("click", async () => {
+  if(Notification.permission !== "granted") await askNotif();
+  initFCM();
+});
+
 /* ---------- carte Rappels (dans Réglages) ---------- */
 function renderRappels(){
+  renderPush();
   $("#sw-bq").classList.toggle("on", !!S.quran.on);
   $("#bq-rem-state").textContent = S.quran.on ? "Chaque jour à " + S.quran.time : "Désactivé";
   $("#bq-time").value = S.quran.time;
@@ -1567,18 +1594,77 @@ function drawDialSafe(){ if($("#p-home").classList.contains("on")) drawDial(); }
 setInterval(tick, 30000);
 
 /* ---- Cloud Messaging (push depuis un serveur) ---- */
+let FCM = { state:"…", detail:"" };
+function setFCM(state, detail = ""){ FCM = { state, detail }; renderPush(); }
+
+const FCM_ERR = {
+  "messaging/unsupported-browser":
+    "Ce navigateur ne gère pas les push. Sur iPhone : Safari, iOS 16.4+, et l'app doit être installée sur l'écran d'accueil.",
+  "messaging/permission-blocked":
+    "Les notifications sont bloquées dans les réglages du navigateur.",
+  "messaging/failed-service-worker-registration":
+    "firebase-messaging-sw.js n'a pas pu démarrer. Vérifie qu'il est bien en ligne à côté de index.html.",
+  "messaging/token-subscribe-failed":
+    "Firebase a refusé l'abonnement. Vérifie la clé VAPID et que Cloud Messaging est activé.",
+  "messaging/only-available-in-window":
+    "À ouvrir dans une fenêtre normale, pas dans un cadre."
+};
+
+/** attend que le service worker soit vraiment actif (sinon getToken échoue) */
+function swActive(reg){
+  if(reg.active) return Promise.resolve(reg);
+  return new Promise(res => {
+    const w = reg.installing || reg.waiting;
+    if(!w) return res(reg);
+    const t = setTimeout(() => res(reg), 9000);
+    w.addEventListener("statechange", () => {
+      if(w.state === "activated"){ clearTimeout(t); res(reg); }
+    });
+  });
+}
+
 async function initFCM(){
-  if(!fb?.messaging || Notification.permission !== "granted") return;
-  if(!VAPID_KEY || VAPID_KEY.startsWith("COLLE")) return;   // clé pas encore générée
+  if(!("Notification" in window))          return setFCM("off", "Ce navigateur n'a pas de notifications.");
+  if(Notification.permission !== "granted")return setFCM("off", "Autorise d'abord les notifications ci-dessus.");
+  if(!VAPID_KEY || VAPID_KEY.startsWith("COLLE"))
+    return setFCM("err", "La clé VAPID n'est pas renseignée dans index.html.");
+  if(!fb?.messaging)
+    return setFCM("err", "Cloud Messaging n'est pas disponible sur cet appareil ou ce navigateur.");
+
+  setFCM("wait", "Connexion à Firebase…");
   try{
-    const reg = await navigator.serviceWorker.register("firebase-messaging-sw.js", { scope:"./fcm/" });
+    // le fichier en ligne est-il bien le bon ? (erreur la plus fréquente)
+    try{
+      const txt = await (await fetch("firebase-messaging-sw.js?v=" + APP_VERSION, { cache:"no-store" })).text();
+      if(txt.includes("COLLE_TON_API_KEY"))
+        return setFCM("err", "Le fichier firebase-messaging-sw.js en ligne contient encore la configuration d'exemple. Remplace-le par celui du dossier, puis republie.");
+      if(!txt.includes("firebase.initializeApp"))
+        return setFCM("err", "firebase-messaging-sw.js est introuvable ou vide sur le serveur.");
+    }catch(e){ /* hors ligne : on tente quand même */ }
+
+    let reg = await navigator.serviceWorker.register("firebase-messaging-sw.js", { scope:"./fcm/" });
+    reg = await swActive(reg);
+
     const token = await fb.getToken(fb.messaging, { vapidKey:VAPID_KEY, serviceWorkerRegistration:reg });
-    if(token && token !== S.fcmToken){ S.fcmToken = token; save(); }
+    if(!token) return setFCM("err", "Firebase n'a pas renvoyé de jeton. Réessaie dans un instant.");
+
+    if(token !== S.fcmToken){ S.fcmToken = token; save(); }
+    setFCM("ok", "Cet appareil peut recevoir les rappels même app fermée.");
+
     fb.onMessage(fb.messaging, payload => {
       const n = payload.notification || {};
       toast((n.title || "Rappel") + " — " + (n.body || ""));
     });
-  }catch(e){ console.warn("FCM", e); }
+  }catch(e){
+    console.warn("FCM", e);
+    const msg = String(e?.message || e);
+    if(FCM_ERR[e?.code]) return setFCM("err", FCM_ERR[e.code]);
+    if(msg.includes("script evaluation failed") || msg.includes("Failed to register"))
+      return setFCM("err", "firebase-messaging-sw.js n'a pas pu démarrer. Soit le fichier en ligne n'est pas le bon, soit l'appareil n'a pas réussi à charger les scripts Firebase. Vérifie la connexion puis réessaie.");
+    if(msg.includes("Failed to fetch") || msg.includes("NetworkError"))
+      return setFCM("err", "Pas de connexion pour joindre Firebase. Réessaie une fois en ligne.");
+    setFCM("err", "Erreur : " + (e?.code || msg));
+  }
 }
 
 /* ============================================================
@@ -1938,7 +2024,11 @@ function hideSplash(){
     }
     first = false;
   });
-  document.addEventListener("visibilitychange", () => { if(!document.hidden){ applyTheme(); tick(); } });
+  document.addEventListener("visibilitychange", () => {
+    if(document.hidden) return;
+    applyTheme(); tick();
+    if(FCM.state !== "ok" && Notification.permission === "granted") initFCM();
+  });
 })();
 </script>
 
