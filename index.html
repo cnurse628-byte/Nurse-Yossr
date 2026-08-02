@@ -182,10 +182,18 @@ svg.chart text{font-size:9px;fill:var(--mute);font-family:"Instrument Sans"}
   display:grid;place-items:center;transition:transform 4s ease-in-out}
 .orb .in{position:absolute;font-size:15px;font-weight:600;color:var(--head)}
 .orb.big{transform:scale(1.85)}
-.sounds{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:6px}
-.sound{padding:16px 6px;border-radius:var(--r-sm);background:var(--surface);border:1px solid var(--border);text-align:center;font-size:12.5px;color:var(--head);font-weight:600}
-.sound.on{border-color:var(--accent);background:var(--accent-soft)}
-.sound .ico{display:block;font-size:20px;margin-bottom:5px}
+.tasbih{display:grid;place-items:center;margin:16px 0 12px}
+#tas-btn{width:154px;height:154px;border-radius:50%;background:var(--accent);color:#fff;
+  display:grid;place-items:center;box-shadow:0 20px 38px -20px var(--accent);
+  transition:transform .09s;user-select:none}
+#tas-btn:active{transform:scale(.93)}
+#tas-btn b{font-family:"Bricolage Grotesque",sans-serif;font-weight:800;font-size:46px;
+  line-height:1;display:block;font-variant-numeric:tabular-nums}
+#tas-btn span{font-size:12.5px;opacity:.82;display:block;margin-top:5px}
+#tas-btn.full{background:var(--menthe);box-shadow:0 20px 38px -20px var(--menthe)}
+.dhikr-ar{font-size:21px;line-height:1.95;direction:rtl;text-align:right;color:var(--head)}
+.dhikr-tr{font-size:13px;color:var(--mute);margin-top:8px;font-style:italic}
+.dhikr-no{font-size:12.5px;color:var(--mute);margin-top:6px}
 
 /* ---------- en-tête fixe ---------- */
 #topbar{position:sticky;top:0;z-index:30;padding:calc(var(--safe-t) + 12px) 16px 0;
@@ -483,19 +491,6 @@ a{color:var(--accent)}
   </section>
 
   <!-- SLEEP -->
-  <section class="page" id="p-sleep">
-    <div class="topbar"><div><h1>Sommeil</h1><div class="date" id="sl-mode">—</div></div>
-      <div class="chip" id="sl-dur">—</div></div>
-    <div class="card">
-      <div class="two">
-        <div><label class="f">Coucher</label><input class="in" type="time" id="sl-bed"></div>
-        <div><label class="f">Réveil</label><input class="in" type="time" id="sl-wake"></div>
-      </div>
-      <button class="btn solid wide" id="sl-save">Enregistrer la nuit</button>
-      <div class="sub" id="sl-tip" style="margin-top:12px"></div>
-    </div>
-    <div class="card"><h2>7 dernières nuits</h2><svg class="chart" id="sl-chart"></svg></div>
-  </section>
 
   <!-- STATS -->
   <!-- RELAX -->
@@ -510,20 +505,81 @@ a{color:var(--accent)}
         <button class="pill" data-min="5">5 min</button><button class="pill" data-min="10">10 min</button>
       </div>
     </div>
-    <div class="card"><h2>Sons d'ambiance</h2><div class="sub">Générés sur l'appareil, aucun téléchargement</div>
-      <div class="sounds">
-        <button class="sound" data-snd="pluie"><span class="ico">🌧️</span>Pluie</button>
-        <button class="sound" data-snd="mer"><span class="ico">🌊</span>Mer</button>
-        <button class="sound" data-snd="foret"><span class="ico">🌲</span>Forêt</button>
-      </div>
-      <button class="btn ghost wide" id="snd-stop">Couper le son</button>
-    </div>
-    <div class="card"><h2>Adhkar</h2><div class="sub">Un rappel à lire tranquillement</div>
-      <div id="dhikr-box" style="margin-top:12px"></div>
-      <button class="btn wide" id="dhikr-next">Un autre</button></div>
   </section>
 
   <!-- NOTES -->
+
+  <!-- CORAN & ADHKAR -->
+  <section class="page" id="p-dhikr">
+    <div class="topbar"><div><h1>Coran &amp; adhkar</h1><div class="date">Ta lecture du jour</div></div>
+      <div class="chip" id="bq-chip">—</div></div>
+
+    <div class="card">
+      <h2>Sourate Al-Baqara</h2>
+      <div class="sub">286 versets · chaque jour</div>
+      <div class="row" style="margin-top:16px">
+        <div><div class="eyebrow">Tu en es au verset</div><div class="big" id="bq-verse">0</div></div>
+        <div style="text-align:right"><div class="eyebrow">Il reste</div><div class="big" id="bq-left">286</div></div>
+      </div>
+      <div class="bar" style="margin-top:12px"><i id="bq-bar"></i></div>
+      <div class="btns" style="margin-top:14px">
+        <button class="btn" data-bq="5">+5</button>
+        <button class="btn" data-bq="10">+10</button>
+        <button class="btn" data-bq="25">+25</button>
+      </div>
+      <div class="two" style="margin-top:10px;grid-template-columns:1fr auto">
+        <input class="in" type="number" id="bq-set" min="0" max="286" inputmode="numeric" placeholder="Je me suis arrêtée au verset…">
+        <button class="btn solid" id="bq-go" style="padding:14px 18px">Marquer</button>
+      </div>
+      <button class="btn solid wide" id="bq-done">J'ai terminé la sourate ✓</button>
+      <button class="btn ghost wide" id="bq-reset">Repartir de zéro</button>
+    </div>
+
+    <div class="card"><h2>Les 7 derniers jours</h2>
+      <div class="hist" id="bq-hist"></div>
+      <div class="sub" id="bq-streak" style="margin-top:12px">—</div></div>
+
+    <div class="card">
+      <h2>Rappel de lecture</h2>
+      <div class="item" style="padding-top:4px"><div class="name"><b>Me rappeler chaque jour</b>
+        <span id="bq-rem-state">—</span></div><div class="sw" id="sw-bq"></div></div>
+      <label class="f">À quelle heure</label>
+      <input class="in" type="time" id="bq-time" value="07:30">
+      <div class="sub" style="margin-top:10px">Le soir, si la sourate n'est pas finie,
+        l'app te dit combien de versets il reste.</div>
+    </div>
+
+    <div class="card">
+      <h2>Dhikr</h2>
+      <div id="dhikr-box"></div>
+      <div class="tasbih"><button id="tas-btn"><b id="tas-n">0</b><span id="tas-goal">/ 33</span></button></div>
+      <div class="pillrow" style="justify-content:center" id="tas-goals">
+        <button class="pill on" data-tas="33">33</button>
+        <button class="pill" data-tas="100">100</button>
+        <button class="pill" data-tas="0">libre</button>
+      </div>
+      <div class="two" style="margin-top:12px">
+        <button class="btn" id="dhikr-next">Un autre dhikr</button>
+        <button class="btn ghost" id="tas-reset">Remettre à zéro</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Rappel de dhikr</h2>
+      <div class="sub">Un petit rappel régulier pendant la journée</div>
+      <div class="item"><div class="name"><b>Activer</b><span id="dh-state">—</span></div>
+        <div class="sw" id="sw-dhikr"></div></div>
+      <div class="pillrow" id="dh-every">
+        <button class="pill" data-every="10">10 min</button>
+        <button class="pill" data-every="15">15 min</button>
+        <button class="pill" data-every="30">30 min</button>
+        <button class="pill" data-every="60">1 h</button>
+      </div>
+      <div class="sub" style="margin-top:12px">Les rappels arrivent quand l'app est ouverte
+        ou récemment utilisée. Voir README.md pour les recevoir app fermée.</div>
+    </div>
+  </section>
+
   <section class="page" id="p-notes">
     <div class="topbar"><div><h1>Notes</h1><div class="date">Ce qu'il ne faut pas oublier</div></div>
       <div class="chip" id="n-count">0</div></div>
@@ -581,6 +637,19 @@ a{color:var(--accent)}
       <div id="g-list" style="margin-top:12px"></div>
     </div>
 
+      <div class="chip" id="sl-dur">—</div></div>
+    <div class="card">
+      <h2>Sommeil</h2>
+      <div class="sub" id="sl-mode2">—</div>
+      <div class="two" style="margin-top:10px">
+        <div><label class="f">Coucher</label><input class="in" type="time" id="sl-bed"></div>
+        <div><label class="f">Réveil</label><input class="in" type="time" id="sl-wake"></div>
+      </div>
+      <button class="btn solid wide" id="sl-save">Enregistrer la nuit</button>
+      <div class="sub" id="sl-tip" style="margin-top:12px"></div>
+    </div>
+    <div class="card"><h2>7 dernières nuits</h2><svg class="chart" id="sl-chart"></svg></div>
+
     <div class="card">
       <h2>Rappels</h2>
       <div class="item"><div class="name"><b>Notifications</b><span id="notif-state">—</span></div>
@@ -590,7 +659,6 @@ a{color:var(--accent)}
     </div>
     <div class="card">
       <h2>Données</h2>
-      <button class="btn wide" id="btn-export">Exporter mes données</button>
       <button class="btn wide" id="btn-update">Vérifier les mises à jour</button>
       <div class="badge-note" id="cloud-state"><span class="dot-sync"></span>—</div>
       <div class="badge-note" id="app-version" style="margin-top:6px">—</div>
@@ -622,7 +690,7 @@ const FIREBASE_CONFIG = {
 const VAPID_KEY = "BHF4uyKx2qXYuDTYFraniyKXRA2nac0o_AOp5WdL46onWZUI4ZTATnyZfi0AsL_7jVxXMrdiDmiYyFCNuhNd2q0";
 
 const FB_READY = !FIREBASE_CONFIG.apiKey.startsWith("COLLE");
-const APP_VERSION = "2.1.0";   // doit être identique à VERSION dans sw.js
+const APP_VERSION = "2.2.0";   // doit être identique à VERSION dans sw.js
 
 /* ============================================================
    2) OUTILS
@@ -651,7 +719,9 @@ function vibrate(p){ try{ navigator.vibrate && navigator.vibrate(p); }catch(e){}
 const DEFAULT_STATE = {
   v: 1,
   profile: { name:"", weight:60, waterGoal:2100, wake:"06:30", bed:"22:30",
-             notif:false, pauseOn:true, height:165, hideInstall:false },
+             notif:false, pauseOn:true, height:165, hideInstall:false,
+             dhikrOn:false, dhikrEvery:10, tasGoal:33 },
+  quran: { on:true, time:"07:30", total:286 },
   schedule: { 0:{off:true,start:"08:00",end:"14:00"}, 1:{off:false,start:"08:00",end:"14:00"},
               2:{off:false,start:"08:00",end:"14:00"}, 3:{off:false,start:"08:00",end:"14:00"},
               4:{off:false,start:"08:00",end:"14:00"}, 5:{off:false,start:"08:00",end:"14:00"},
@@ -668,7 +738,7 @@ let fb = null;                    // { db, auth, doc, setDoc, ... }
 
 const blankDay = () => ({
   water:0, adds:[], meals:{}, pauses:0, mood:null, energy:null, note:"",
-  sleep:null, fired:[]
+  sleep:null, fired:[], quran:0, tasbih:0
 });
 function day(k = activeKey()){
   if(!S.days[k]) S.days[k] = blankDay();
@@ -801,11 +871,20 @@ function remindersToday(){
     const [title, body] = L().pause;
     out.push({ id:"pause"+i, type:"pause", at:t, title, body, page:"p-home" });
   });
+  if(S.quran?.on){
+    const left = Math.max(0, (S.quran.total || 286) - (day().quran || 0));
+    out.push({ id:"coran", type:"coran", at:S.quran.time || "07:30",
+               title:"📖 Sourate Al-Baqara", body:"C'est le moment de ta lecture du jour.", page:"p-dhikr" });
+    out.push({ id:"coran-soir", type:"coran", at: toHM(toMin(S.profile.bed) - 120),
+               title:"📖 Il te reste " + left + " versets",
+               body:"Tu t'étais arrêtée au verset " + (day().quran || 0) + ". Reprends là où tu en es.",
+               page:"p-dhikr" });
+  }
   const [mt1, mb1] = L().mood;
   out.push({ id:"mood", type:"mood", at: isGardeToday() ? "21:00" : "21:30", title:mt1, body:mb1, page:"p-mood" });
   if(!isGardeToday()){
     const [st1, sb1] = L().sleep;
-    out.push({ id:"sleep", type:"sleep", at: toHM(toMin(S.profile.bed) - 20), title:st1, body:sb1, page:"p-sleep" });
+    out.push({ id:"sleep", type:"sleep", at: toHM(toMin(S.profile.bed) - 20), title:st1, body:sb1, page:"p-set" });
   }
   return out.sort((a,b) => toMin(a.at) - toMin(b.at));
 }
@@ -820,6 +899,7 @@ function isDone(r){
   if(r.type === "repas") return !!d.meals[r.meal];
   if(r.type === "pause"){ const idx = Number(r.id.replace("pause","")); return d.pauses > idx; }
   if(r.type === "mood")  return d.mood != null;
+  if(r.type === "coran") return (d.quran || 0) >= (S.quran?.total || 286);
   if(r.type === "sleep") return !!d.sleep;
   return false;
 }
@@ -886,7 +966,7 @@ function drawDial(){
 
   g += `<path class="prog" d="${arc(C,C,Ri,0,Math.max(0.1,p.total*359.9))}"/>`;
 
-  rems.filter(r => r.type !== "sleep").forEach(r => {
+  rems.filter(r => r.type !== "sleep" && r.id !== "coran-soir").forEach(r => {
     const m = toMin(r.at), done = isDone(r);
     const cls = done ? "done" : (m <= now ? "late" : "todo");
     const [x,y] = POL(C,C,R,degOf(m));
@@ -910,7 +990,7 @@ function drawDial(){
 const TABS = [
   ["p-home",  "🏠", "Accueil"], ["p-water", "💧", "Eau"],
   ["p-meals", "🍽️", "Repas"],   ["p-mood",  "💗", "Humeur"],
-  ["p-sleep", "🌙", "Sommeil"], ["p-relax", "🧘", "Détente"],
+  ["p-dhikr", "📖", "Coran"],   ["p-relax", "🧘", "Détente"],
   ["p-notes", "📝", "Notes"],   ["p-set",   "⚙️", "Réglages"]
 ];
 $("#tabs").innerHTML = TABS.map(([id, e, t]) =>
@@ -944,9 +1024,20 @@ const QUOTES = [
 const DHIKR = [
   ["سُبْحَانَ اللهِ وَبِحَمْدِهِ", "Subhan Allahi wa bihamdih", "33 fois — le cœur se calme."],
   ["لَا حَوْلَ وَلَا قُوَّةَ إِلَّا بِاللهِ", "La hawla wa la quwwata illa billah", "Quand la fatigue pèse."],
-  ["اللَّهُمَّ أَعِنِّي عَلَى ذِكْرِكَ وَشُكْرِكَ وَحُسْنِ عِبَادَتِكَ", "Allahumma a'inni 'ala dhikrika wa shukrika wa husni 'ibadatik", "Après la prière."],
+  ["أَسْتَغْفِرُ اللهَ وَأَتُوبُ إِلَيْهِ", "Astaghfirullaha wa atubu ilayh", "Entre deux patients."],
+  ["اللَّهُمَّ أَعِنِّي عَلَى ذِكْرِكَ وَشُكْرِكَ وَحُسْنِ عِبَادَتِكَ",
+   "Allahumma a'inni 'ala dhikrika wa shukrika wa husni 'ibadatik", "Après la prière."],
   ["حَسْبُنَا اللهُ وَنِعْمَ الْوَكِيلُ", "Hasbuna Allahu wa ni'ma al-wakil", "Avant une garde difficile."],
-  ["رَبِّ اشْرَحْ لِي صَدْرِي وَيَسِّرْ لِي أَمْرِي", "Rabbi ishrah li sadri wa yassir li amri", "Avant d'entrer au service."]
+  ["رَبِّ اشْرَحْ لِي صَدْرِي وَيَسِّرْ لِي أَمْرِي", "Rabbi ishrah li sadri wa yassir li amri", "Avant d'entrer au service."],
+  ["لَا إِلَهَ إِلَّا اللهُ وَحْدَهُ لَا شَرِيكَ لَهُ", "La ilaha illa Allah wahdahu la sharika lah", "Cent fois par jour."],
+  ["سُبْحَانَ اللهِ وَالْحَمْدُ لِلهِ وَلَا إِلَهَ إِلَّا اللهُ وَاللهُ أَكْبَرُ",
+   "Subhan Allah, wal-hamdu lillah, wa la ilaha illa Allah, wallahu akbar", "Les quatre paroles aimées."],
+  ["اللَّهُمَّ صَلِّ وَسَلِّمْ عَلَى نَبِيِّنَا مُحَمَّدٍ", "Allahumma salli wa sallim 'ala nabiyyina Muhammad", "Autant que tu peux."],
+  ["اللَّهُمَّ اشْفِ أَنْتَ الشَّافِي لَا شِفَاءَ إِلَّا شِفَاؤُكَ",
+   "Allahumma ishfi, anta ash-Shafi, la shifa'a illa shifa'uk", "Pour tes patients."],
+  ["رَبَّنَا آتِنَا فِي الدُّنْيَا حَسَنَةً وَفِي الْآخِرَةِ حَسَنَةً",
+   "Rabbana atina fid-dunya hasanatan wa fil-akhirati hasanah", "La plus complète des invocations."],
+  ["اللَّهُمَّ إِنِّي أَسْأَلُكَ الْعَافِيَةَ", "Allahumma inni as'aluka al-'afiyah", "Pour toi et pour eux."]
 ];
 
 function renderHome(){
@@ -1033,8 +1124,9 @@ function renderMood(){
 
 function renderSleep(){
   const d = day();
-  $("#sl-mode").textContent = isGardeToday()
-    ? "Mode garde : récupère dès que tu rentres" : "Nuit normale";
+  const m = isGardeToday() ? "Mode garde : récupère dès que tu rentres" : "Nuit normale";
+  const e1 = $("#sl-mode"), e2 = $("#sl-mode2");
+  if(e1) e1.textContent = m; if(e2) e2.textContent = m;
   if(d.sleep){ $("#sl-bed").value = d.sleep.bed; $("#sl-wake").value = d.sleep.wake;
     $("#sl-dur").textContent = fmtDur(d.sleep.dur); }
   else { $("#sl-bed").value = S.profile.bed; $("#sl-wake").value = S.profile.wake; $("#sl-dur").textContent = "—"; }
@@ -1113,8 +1205,9 @@ function renderSet(){
 
 function render(id){
   ({ "p-home":renderHome, "p-water":renderWater, "p-meals":renderMeals, "p-mood":renderMood,
-     "p-sleep":renderSleep, "p-notes":renderNotes, "p-relax":renderRelax,
-     "p-set":() => { renderSet(); renderSched(); }
+     "p-notes":renderNotes, "p-relax":renderRelax,
+     "p-dhikr":renderDhikr,
+     "p-set":() => { renderSet(); renderSched(); renderSleep(); }
    }[id] || (()=>{}))();
   bellBadge();
 }
@@ -1123,7 +1216,48 @@ function hello(){
   const hi = h < 12 ? "Bonjour" : h < 18 ? "Bon après-midi" : "Bonsoir";
   $("#hd-hello").textContent = `${hi}, ${S.profile.name || "Yossr"} 🌸`;
 }
-function renderRelax(){ showDhikr(); }
+function renderRelax(){}
+
+/* ---------- Coran & adhkar ---------- */
+const BQ_TOTAL = () => S.quran?.total || 286;
+function renderDhikr(){
+  const d = day(), v = clamp(d.quran || 0, 0, BQ_TOTAL()), tot = BQ_TOTAL();
+  $("#bq-verse").textContent = v;
+  $("#bq-left").textContent  = tot - v;
+  $("#bq-bar").style.width   = (v / tot * 100) + "%";
+  $("#bq-chip").textContent  = v >= tot ? "Terminée 🌸" : Math.round(v / tot * 100) + "%";
+
+  $("#bq-hist").innerHTML = last(7).map(k => {
+    const q = S.days[k]?.quran || 0;
+    return `<div title="${k} · ${q} versets">${q >= tot ? "✅" : q > 0 ? "🟡" : "⬜"}</div>`;
+  }).join("");
+  $("#bq-streak").textContent = "🔥 " + quranStreak() + " jour(s) de suite avec la sourate terminée";
+
+  $("#sw-bq").classList.toggle("on", !!S.quran.on);
+  $("#bq-rem-state").textContent = S.quran.on ? "Rappel à " + S.quran.time : "Aucun rappel";
+  $("#bq-time").value = S.quran.time;
+
+  showDhikr();
+  const g = S.profile.tasGoal ?? 33, n = d.tasbih || 0;
+  $("#tas-n").textContent = n;
+  $("#tas-goal").textContent = g ? "/ " + g : "libre";
+  $("#tas-btn").classList.toggle("full", !!g && n >= g);
+  $$("#tas-goals .pill").forEach(b => b.classList.toggle("on", +b.dataset.tas === g));
+
+  $("#sw-dhikr").classList.toggle("on", !!S.profile.dhikrOn);
+  $("#dh-state").textContent = S.profile.dhikrOn
+    ? "Toutes les " + S.profile.dhikrEvery + " minutes" : "Désactivé";
+  $$("#dh-every .pill").forEach(b => b.classList.toggle("on", +b.dataset.every === S.profile.dhikrEvery));
+}
+function quranStreak(){
+  let n = 0; const dte = new Date(), tot = BQ_TOTAL();
+  for(let i = 0; i < 400; i++){
+    const k = keyOf(dte), q = S.days[k]?.quran || 0;
+    if(q >= tot) n++; else if(i > 0) break;
+    dte.setDate(dte.getDate() - 1);
+  }
+  return n;
+}
 
 /* ---- helpers ---- */
 function last(n){
@@ -1251,11 +1385,6 @@ $("#sw-pause").addEventListener("click", () => {
   S.profile.pauseOn = !S.profile.pauseOn; save(); renderSet();
 });
 $("#btn-update").addEventListener("click", checkUpdate);
-$("#btn-export").addEventListener("click", () => {
-  const blob = new Blob([JSON.stringify(S, null, 2)], { type:"application/json" });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob); a.download = `nurse-yossr-${todayKey()}.json`; a.click();
-});
 $("#sheet .bd").addEventListener("click", closeSheet);
 
 /* ============================================================
@@ -1282,7 +1411,7 @@ function openSheet(html){
 }
 function closeSheet(){ $("#sheet").classList.remove("on"); }
 
-const REM_ICON = { eau:"💧", repas:"🍽️", pause:"🧘", mood:"💗", sleep:"🌙" };
+const REM_ICON = { eau:"💧", repas:"🍽️", pause:"🧘", mood:"💗", sleep:"🌙", coran:"📖" };
 function openBell(){
   const rems = remindersToday();
   const order = { late:0, todo:1, done:2 };
@@ -1388,8 +1517,22 @@ async function fire(r, mark = true){
   if(mark){ const d = day(); if(!d.fired.includes(r.id)){ d.fired.push(r.id); save(); } }
 }
 
+let lastDhikr = 0;
+function dhikrTick(){
+  const p = S.profile;
+  if(!p.dhikrOn || !p.notif || Notification.permission !== "granted") return;
+  const n = nowMin(), a = toMin(p.wake), b = toMin(p.bed);
+  const awake = a < b ? (n >= a && n <= b) : (n >= a || n <= b);   // veille qui passe minuit
+  if(!awake) return;
+  const every = Math.max(5, p.dhikrEvery || 10) * 60000;
+  if(Date.now() - lastDhikr < every) return;
+  lastDhikr = Date.now();
+  const d = DHIKR[Math.floor(Math.random() * DHIKR.length)];
+  fire({ id:"dhikr", title:"📿 " + d[1], body:d[0], page:"p-dhikr" }, false);
+}
+
 function tick(){
-  drawDialSafe(); bellBadge();
+  drawDialSafe(); bellBadge(); dhikrTick();
   if(!S.profile.notif) return;
   const d = day(), now = nowMin();
   for(const r of remindersToday()){
@@ -1452,45 +1595,58 @@ function stopBreath(){
   $("#rx-timer").textContent = pad(rxMin) + ":00";
 }
 
-let ac = null, node = null;
-function noise(type){
-  stopSound();
-  ac = ac || new (window.AudioContext || window.webkitAudioContext)();
-  const len = ac.sampleRate * 4, buf = ac.createBuffer(1, len, ac.sampleRate), dt = buf.getChannelData(0);
-  let last = 0;
-  for(let i = 0; i < len; i++){
-    const w = Math.random()*2 - 1;
-    last = (last + 0.02*w) / 1.02; dt[i] = last * 3.2;
-  }
-  const src = ac.createBufferSource(); src.buffer = buf; src.loop = true;
-  const flt = ac.createBiquadFilter(), gain = ac.createGain(), lfo = ac.createOscillator(), lg = ac.createGain();
-  if(type === "pluie"){ flt.type = "highpass"; flt.frequency.value = 900; gain.gain.value = .45; }
-  if(type === "mer")  { flt.type = "lowpass";  flt.frequency.value = 550; gain.gain.value = .5; }
-  if(type === "foret"){ flt.type = "bandpass"; flt.frequency.value = 700; flt.Q.value = .6; gain.gain.value = .55; }
-  lfo.frequency.value = type === "mer" ? 0.09 : 0.25; lg.gain.value = type === "mer" ? .28 : .1;
-  lfo.connect(lg); lg.connect(gain.gain);
-  src.connect(flt); flt.connect(gain); gain.connect(ac.destination);
-  src.start(); lfo.start();
-  node = { src, lfo, gain };
-}
-function stopSound(){
-  if(node){ try{ node.src.stop(); node.lfo.stop(); }catch(e){} node = null; }
-  $$(".sound").forEach(s => s.classList.remove("on"));
-}
-$$(".sound").forEach(b => b.addEventListener("click", () => {
-  const on = b.classList.contains("on"); stopSound();
-  if(!on){ noise(b.dataset.snd); b.classList.add("on"); }
-}));
-$("#snd-stop").addEventListener("click", stopSound);
 
 let dhikrI = 0;
 function showDhikr(){
   const d = DHIKR[dhikrI % DHIKR.length];
-  $("#dhikr-box").innerHTML = `<div style="font-size:21px;line-height:1.9;direction:rtl;text-align:right;color:var(--head)">${d[0]}</div>
-    <div style="font-size:13px;color:var(--mute);margin-top:8px;font-style:italic">${d[1]}</div>
-    <div style="font-size:12.5px;color:var(--mute);margin-top:6px">${d[2]}</div>`;
+  $("#dhikr-box").innerHTML = `<div class="dhikr-ar">${d[0]}</div>
+    <div class="dhikr-tr">${d[1]}</div><div class="dhikr-no">${d[2]}</div>`;
 }
 $("#dhikr-next").addEventListener("click", () => { dhikrI++; showDhikr(); });
+
+/* ---- Sourate Al-Baqara ---- */
+function setVerse(v){
+  const d = day(), tot = BQ_TOTAL(), was = (d.quran || 0) >= tot;
+  d.quran = clamp(Math.round(v), 0, tot);
+  save(); renderDhikr(); vibrate(14);
+  if(!was && d.quran >= tot){ toast("🌸 Sourate terminée, mabrouk !"); vibrate([30,60,30]); }
+}
+$$("[data-bq]").forEach(b => b.addEventListener("click", () => setVerse((day().quran || 0) + (+b.dataset.bq))));
+$("#bq-go").addEventListener("click", () => {
+  const v = +$("#bq-set").value;
+  if(!$("#bq-set").value) return toast("Écris le numéro du verset");
+  setVerse(v); $("#bq-set").value = "";
+});
+$("#bq-done").addEventListener("click", () => setVerse(BQ_TOTAL()));
+$("#bq-reset").addEventListener("click", () => setVerse(0));
+$("#sw-bq").addEventListener("click", () => { S.quran.on = !S.quran.on; save(); renderDhikr(); });
+$("#bq-time").addEventListener("change", e => {
+  S.quran.time = e.target.value || "07:30"; save(); renderDhikr(); toast("Rappel à " + S.quran.time);
+});
+
+/* ---- tasbih ---- */
+$("#tas-btn").addEventListener("click", () => {
+  const d = day(), g = S.profile.tasGoal ?? 33;
+  d.tasbih = (d.tasbih || 0) + 1;
+  vibrate(g && d.tasbih === g ? [30,50,30] : 10);
+  if(g && d.tasbih === g) toast("✓ " + g + " — barakallahu fik");
+  save(); renderDhikr();
+});
+$("#tas-reset").addEventListener("click", () => { day().tasbih = 0; save(); renderDhikr(); });
+$$("#tas-goals .pill").forEach(b => b.addEventListener("click", () => {
+  S.profile.tasGoal = +b.dataset.tas; save(); renderDhikr();
+}));
+
+/* ---- rappel de dhikr ---- */
+$("#sw-dhikr").addEventListener("click", async () => {
+  if(!S.profile.dhikrOn && Notification.permission !== "granted") await askNotif();
+  S.profile.dhikrOn = !S.profile.dhikrOn;
+  lastDhikr = 0; save(); renderDhikr();
+  toast(S.profile.dhikrOn ? "Rappels de dhikr activés 📿" : "Rappels de dhikr coupés");
+});
+$$("#dh-every .pill").forEach(b => b.addEventListener("click", () => {
+  S.profile.dhikrEvery = +b.dataset.every; lastDhikr = 0; save(); renderDhikr();
+}));
 
 /* ============================================================
    13) THEME
