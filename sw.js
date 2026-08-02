@@ -1,5 +1,4 @@
-/* Nurse Yossr — service worker : cache offline + clic sur notification */
-const VERSION = "2.1.0";       
+const VERSION = "2.2.0";        
 const CACHE = "yossr-" + VERSION;
 const ASSETS = ["./", "./index.html", "./manifest.json",
                 "./icons/icon-192.png", "./icons/icon-512.png"];
