@@ -715,7 +715,7 @@ const FIREBASE_CONFIG = {
 const VAPID_KEY = "BHF4uyKx2qXYuDTYFraniyKXRA2nac0o_AOp5WdL46onWZUI4ZTATnyZfi0AsL_7jVxXMrdiDmiYyFCNuhNd2q0";
 
 const FB_READY = !FIREBASE_CONFIG.apiKey.startsWith("COLLE");
-const APP_VERSION = "3.0.1";   // doit être identique à VERSION dans sw.js
+const APP_VERSION = "3.1.0";   // doit être identique à VERSION dans sw.js
 
 /* ============================================================
    2) OUTILS
@@ -745,7 +745,7 @@ const DEFAULT_STATE = {
   v: 1,
   profile: { name:"", weight:60, waterGoal:2100, wake:"06:30", bed:"22:30",
              notif:false, pauseOn:true, height:165, hideInstall:false,
-             dhikrOn:false, dhikrEvery:10, tasGoal:33 },
+             dhikrOn:false, dhikrEvery:10, lastDhikr:0, tasGoal:33 },
   quran: { on:true, time:"07:30", total:286 },
   schedule: { 0:{off:true,start:"08:00",end:"14:00"}, 1:{off:false,start:"08:00",end:"14:00"},
               2:{off:false,start:"08:00",end:"14:00"}, 3:{off:false,start:"08:00",end:"14:00"},
@@ -1493,9 +1493,13 @@ $("#sheet .bd").addEventListener("click", closeSheet);
    10 bis) LA CLOCHE — centre de rappels dans l'app
    Marche même quand les notifications du téléphone sont coupées.
    ============================================================ */
+/** Un rappel est repéré par son identifiant ET son heure : si tu changes
+ *  l'heure, c'est un nouveau rappel, même s'il est déjà parti aujourd'hui. */
+const remKey = r => r.id + "@" + r.at;
+
 function remStatus(r){
   if(isDone(r)) return "done";
-  if((day().seen || []).includes(r.id)) return "seen";
+  if((day().seen || []).includes(remKey(r))) return "seen";
   return toMin(r.at) <= nowMin() ? "late" : "todo";
 }
 function lateCount(){ return remindersToday().filter(r => remStatus(r) === "late").length; }
@@ -1546,7 +1550,7 @@ function openBell(){
       <div class="b" data-page="${r.page}"><b>${REM_ICON[r.type] || "•"} ${r.title.replace(/^[^\s]+\s/, "")}</b>
         <span>${WORD[s]}</span></div>
       ${s === "late"
-        ? `<button class="rem-ok" data-seen="${r.id}" aria-label="Marquer comme vu">✓</button>`
+        ? `<button class="rem-ok" data-seen="${remKey(r)}" aria-label="Marquer comme vu">✓</button>`
         : `<div class="s"></div>`}
     </div>`).join("");
 
@@ -1560,7 +1564,7 @@ function openBell(){
   }));
   const clr = $("#rem-clear");
   if(clr) clr.addEventListener("click", () => {
-    markSeen(remindersToday().filter(r => remStatus(r) === "late").map(r => r.id));
+    markSeen(remindersToday().filter(r => remStatus(r) === "late").map(remKey));
     openBell(); toast("C'est noté 🌸");
   });
   const allow = $("#bell-allow");
@@ -1633,10 +1637,14 @@ async function fire(r, mark = true){
     if(swReg) await swReg.showNotification(r.title, opts);
     else new Notification(r.title, opts);
   }catch(e){ toast(r.title); }
-  if(mark){ const d = day(); if(!d.fired.includes(r.id)){ d.fired.push(r.id); save(); } }
+  if(mark){ const d = day(); const k = remKey(r);
+    if(!d.fired.includes(k)){ d.fired.push(k); save(); } }
 }
 
-let lastDhikr = 0;
+/* Le moment du dernier dhikr est gardé dans le compte : sinon il repartait
+   à zéro à chaque ouverture de l'app, et un rappel tombait aussitôt. */
+const lastDhikrAt  = () => Number(S.profile.lastDhikr || 0);
+const setLastDhikr = t => { S.profile.lastDhikr = t; save(); };
 const inWindow = (n, a, b) => a < b ? (n >= a && n <= b) : (n >= a || n <= b);
 
 /** Éveillée maintenant ? Pendant une garde de nuit, oui — même à 3 h. */
@@ -1651,8 +1659,8 @@ function dhikrTick(){
   if(!p.dhikrOn || !p.notif || Notification.permission !== "granted") return;
   if(!isAwakeNow()) return;
   const every = Math.max(5, p.dhikrEvery || 10) * 60000;
-  if(Date.now() - lastDhikr < every) return;
-  lastDhikr = Date.now();
+  if(Date.now() - lastDhikrAt() < every) return;
+  setLastDhikr(Date.now());
   const d = DHIKR[Math.floor(Math.random() * DHIKR.length)];
   fire({ id:"dhikr", title:d[0], body:"📿 " + d[1], page:"p-dhikr" }, false);
 }
@@ -1663,7 +1671,7 @@ function tick(){
   const d = day(), now = nowMin();
   for(const r of remindersToday()){
     const t = toMin(r.at);
-    if(now >= t && now - t < 50 && !d.fired.includes(r.id) && !isDone(r)) fire(r);
+    if(now >= t && now - t < 50 && !d.fired.includes(remKey(r)) && !isDone(r)) fire(r);
   }
 }
 function drawDialSafe(){ if($("#p-home").classList.contains("on")) drawDial(); }
@@ -1849,11 +1857,11 @@ $$("#tas-goals .pill").forEach(b => b.addEventListener("click", () => {
 $("#sw-dhikr").addEventListener("click", async () => {
   if(!S.profile.dhikrOn && Notification.permission !== "granted") await askNotif();
   S.profile.dhikrOn = !S.profile.dhikrOn;
-  lastDhikr = 0; save(); renderRappels();
+  S.profile.lastDhikr = 0; save(); renderRappels();
   toast(S.profile.dhikrOn ? "Rappels de dhikr activés 📿" : "Rappels de dhikr coupés");
 });
 $$("#dh-every .pill").forEach(b => b.addEventListener("click", () => {
-  S.profile.dhikrEvery = +b.dataset.every; lastDhikr = 0; save(); renderRappels();
+  S.profile.dhikrEvery = +b.dataset.every; S.profile.lastDhikr = 0; save(); renderRappels();
 }));
 
 /* ============================================================
