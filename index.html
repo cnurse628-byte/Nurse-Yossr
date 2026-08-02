@@ -709,7 +709,7 @@ const FIREBASE_CONFIG = {
 const VAPID_KEY = "BHF4uyKx2qXYuDTYFraniyKXRA2nac0o_AOp5WdL46onWZUI4ZTATnyZfi0AsL_7jVxXMrdiDmiYyFCNuhNd2q0";
 
 const FB_READY = !FIREBASE_CONFIG.apiKey.startsWith("COLLE");
-const APP_VERSION = "2.5.0";   // doit être identique à VERSION dans sw.js
+const APP_VERSION = "2.6.0";   // doit être identique à VERSION dans sw.js
 
 /* ============================================================
    2) OUTILS
@@ -1633,23 +1633,27 @@ async function initFCM(){
 
   setFCM("wait", "Connexion à Firebase…");
   try{
-    // le fichier en ligne est-il bien le bon ? (erreur la plus fréquente)
+    // 1) service worker dédié aux push. Le ?v= force le navigateur à
+    //    reprendre le fichier en ligne au lieu d'une vieille copie en cache.
+    let reg = null;
     try{
-      const txt = await (await fetch("firebase-messaging-sw.js?v=" + APP_VERSION, { cache:"no-store" })).text();
-      if(txt.includes("COLLE_TON_API_KEY"))
-        return setFCM("err", "Le fichier firebase-messaging-sw.js en ligne contient encore la configuration d'exemple. Remplace-le par celui du dossier, puis republie.");
-      if(!txt.includes("firebase.initializeApp"))
-        return setFCM("err", "firebase-messaging-sw.js est introuvable ou vide sur le serveur.");
-    }catch(e){ /* hors ligne : on tente quand même */ }
-
-    let reg = await navigator.serviceWorker.register("firebase-messaging-sw.js", { scope:"./fcm/" });
-    reg = await swActive(reg);
+      reg = await navigator.serviceWorker.register("firebase-messaging-sw.js?v=" + APP_VERSION, { scope:"./fcm/" });
+      reg = await swActive(reg);
+    }catch(e){
+      console.warn("SW push dédié", e);
+    }
+    // 2) secours : on utilise le service worker principal, qui sait aussi
+    //    afficher les push. Comme ça un souci de fichier ne bloque plus rien.
+    if(!reg || !reg.active){
+      reg = swReg || await navigator.serviceWorker.ready;
+      if(!reg) return setFCM("err", "Aucun service worker actif. Recharge la page et réessaie.");
+    }
 
     const token = await fb.getToken(fb.messaging, { vapidKey:VAPID_KEY, serviceWorkerRegistration:reg });
     if(!token) return setFCM("err", "Firebase n'a pas renvoyé de jeton. Réessaie dans un instant.");
 
     if(token !== S.fcmToken){ S.fcmToken = token; save(); }
-    setFCM("ok", "Cet appareil peut recevoir les rappels même app fermée.");
+    setFCM("ok", "Cet appareil peut recevoir les rappels même app fermée. Jeton enregistré dans ton compte.");
 
     fb.onMessage(fb.messaging, payload => {
       const n = payload.notification || {};

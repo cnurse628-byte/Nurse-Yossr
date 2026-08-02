@@ -1,33 +1,45 @@
-/* Nurse Yossr — réception des push Firebase quand l'app est fermée. */
-importScripts("https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js");
-importScripts("https://www.gstatic.com/firebasejs/10.12.5/firebase-messaging-compat.js");
+/* Nurse Yossr — reçoit les rappels quand l'application est fermée.
+ *
+ * Volontairement minimal : aucun script externe, aucune configuration.
+ * Firebase Cloud Messaging envoie un push web standard, ce fichier
+ * l'affiche lui-même. Comme il ne charge rien depuis internet, il ne
+ * peut pas échouer au démarrage — c'était la cause du jeton vide.
+ */
 
-firebase.initializeApp({
-  apiKey:            "AIzaSyBxHBJNexCeZ40HSqOLsC5Xr0K3sFrE314",
-  authDomain:        "nurse-yossr.firebaseapp.com",
-  projectId:         "nurse-yossr",
-  storageBucket:     "nurse-yossr.firebasestorage.app",
-  messagingSenderId: "728514643834",
-  appId:             "1:728514643834:web:ebb56805aa449de2bc78c3"
-});
+self.addEventListener("install",  () => self.skipWaiting());
+self.addEventListener("activate", e => e.waitUntil(self.clients.claim()));
 
-const messaging = firebase.messaging();
+self.addEventListener("push", e => {
+  let title = "Nurse Yossr";
+  let body  = "C'est l'heure 🌸";
+  let page  = "p-home";
 
-messaging.onBackgroundMessage(payload => {
-  const n = payload.notification || payload.data || {};
-  self.registration.showNotification(n.title || "Nurse Yossr", {
-    body: n.body || "C'est l'heure 🌸",
-    icon: "./icons/icon-192.png",
+  try {
+    const p = e.data.json();
+    const n = p.notification || p.data || {};
+    if (n.title) title = n.title;
+    if (n.body)  body  = n.body;
+    if (p.data && p.data.page) page = p.data.page;
+  } catch (err) {
+    try { const t = e.data && e.data.text(); if (t) body = t; } catch (_) {}
+  }
+
+  e.waitUntil(self.registration.showNotification(title, {
+    body,
+    icon:  "./icons/icon-192.png",
     badge: "./icons/icon-192.png",
     vibrate: [60, 40, 60],
-    data: { page: (payload.data && payload.data.page) || "p-home" }
-  });
+    tag: "yossr",
+    renotify: true,
+    data: { page }
+  }));
 });
 
 self.addEventListener("notificationclick", e => {
   e.notification.close();
-  e.waitUntil(clients.matchAll({ type:"window", includeUncontrolled:true }).then(list => {
-    for(const c of list){ if("focus" in c) return c.focus(); }
-    return clients.openWindow("./index.html");
+  const page = (e.notification.data && e.notification.data.page) || "";
+  e.waitUntil(self.clients.matchAll({ type: "window", includeUncontrolled: true }).then(list => {
+    for (const c of list) { if ("focus" in c) return c.focus(); }
+    return self.clients.openWindow("./index.html" + (page ? "#" + page : ""));
   }));
 });
