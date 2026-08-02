@@ -1,4 +1,4 @@
-const VERSION = "2.3.0";        
+const VERSION = "2.4.0";        
 const CACHE = "yossr-" + VERSION;
 const ASSETS = ["./", "./index.html", "./manifest.json",
                 "./icons/icon-192.png", "./icons/icon-512.png"];
