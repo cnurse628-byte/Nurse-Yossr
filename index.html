@@ -710,7 +710,7 @@ const FIREBASE_CONFIG = {
 const VAPID_KEY = "BHF4uyKx2qXYuDTYFraniyKXRA2nac0o_AOp5WdL46onWZUI4ZTATnyZfi0AsL_7jVxXMrdiDmiYyFCNuhNd2q0";
 
 const FB_READY = !FIREBASE_CONFIG.apiKey.startsWith("COLLE");
-const APP_VERSION = "2.8.0";   // doit être identique à VERSION dans sw.js
+const APP_VERSION = "2.9.0";   // doit être identique à VERSION dans sw.js
 
 /* ============================================================
    2) OUTILS
@@ -1294,6 +1294,7 @@ $("#btn-push").addEventListener("click", async () => {
   initFCM();
 });
 
+
 /* Le jeton sert à s'envoyer un push de test depuis la console Firebase. */
 $("#btn-token").addEventListener("click", () => {
   const list = (S.fcmTokens || []).filter(x => x && x.t);
@@ -1332,8 +1333,9 @@ function renderRappels(){
   $("#bq-rem-state").textContent = S.quran.on ? "Chaque jour à " + S.quran.time : "Désactivé";
   $("#bq-time").value = S.quran.time;
   $("#sw-dhikr").classList.toggle("on", !!S.profile.dhikrOn);
-  $("#dh-state").textContent = S.profile.dhikrOn
-    ? "Toutes les " + S.profile.dhikrEvery + " minutes" : "Désactivé";
+  $("#dh-state").textContent = !S.profile.dhikrOn ? "Désactivé"
+    : isAwakeNow() ? "Toutes les " + S.profile.dhikrEvery + " minutes"
+    : "En pause jusqu'à " + S.profile.wake + " — la nuit, on te laisse dormir";
   $$("#dh-every .pill").forEach(b => b.classList.toggle("on", +b.dataset.every === S.profile.dhikrEvery));
 }
 function quranStreak(){
@@ -1596,7 +1598,7 @@ async function fire(r, mark = true){
     toast(r.title); return;
   }
   const opts = { body:r.body, icon:"icons/icon-192.png", badge:"icons/icon-192.png",
-                 tag:r.id, vibrate:[60,40,60], data:{ page:r.page } };
+                 tag:r.id, renotify:true, vibrate:[60,40,60], data:{ page:r.page } };
   try{
     if(swReg) await swReg.showNotification(r.title, opts);
     else new Notification(r.title, opts);
@@ -1605,12 +1607,19 @@ async function fire(r, mark = true){
 }
 
 let lastDhikr = 0;
+const inWindow = (n, a, b) => a < b ? (n >= a && n <= b) : (n >= a || n <= b);
+
+/** Éveillée maintenant ? Pendant une garde de nuit, oui — même à 3 h. */
+function isAwakeNow(){
+  const n = nowMin(), sh = shiftFor();
+  if(!sh.off && sh.garde && inWindow(n, toMin(sh.start), toMin(sh.end))) return true;
+  return inWindow(n, toMin(S.profile.wake), toMin(S.profile.bed));
+}
+
 function dhikrTick(){
   const p = S.profile;
   if(!p.dhikrOn || !p.notif || Notification.permission !== "granted") return;
-  const n = nowMin(), a = toMin(p.wake), b = toMin(p.bed);
-  const awake = a < b ? (n >= a && n <= b) : (n >= a || n <= b);   // veille qui passe minuit
-  if(!awake) return;
+  if(!isAwakeNow()) return;
   const every = Math.max(5, p.dhikrEvery || 10) * 60000;
   if(Date.now() - lastDhikr < every) return;
   lastDhikr = Date.now();
