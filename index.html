@@ -337,6 +337,55 @@ a{color:var(--accent)}
 .diag span{font-size:12.5px;color:var(--mute);line-height:1.55}
 .dot-sync.off{background:var(--mute)}
 
+/* ---------- étirements ---------- */
+.et-scene{display:grid;place-items:center;padding:6px 0 2px}
+#et-dessin{width:min(210px,58vw);height:min(210px,58vw)}
+#et-dessin .corps{fill:none;stroke:var(--head);stroke-width:3.4;stroke-linecap:round;stroke-linejoin:round}
+#et-dessin .tete{fill:var(--accent-soft);stroke:var(--head);stroke-width:3.4}
+#et-dessin .fleche{fill:none;stroke:var(--accent);stroke-width:2.6;stroke-linecap:round;
+  stroke-dasharray:4 5;opacity:.9}
+#et-dessin .pointe{fill:none;stroke:var(--accent);stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+#et-dessin .sol{stroke:var(--border);stroke-width:2.5;stroke-linecap:round}
+.et-nom{font-family:"Bricolage Grotesque",sans-serif;font-weight:800;font-size:19px;
+  color:var(--head);text-align:center;margin-top:6px}
+.et-cote{text-align:center;font-size:12.5px;color:var(--accent);font-weight:600;
+  letter-spacing:.06em;text-transform:uppercase;margin-top:4px;min-height:16px}
+.et-num{font-family:"Bricolage Grotesque",sans-serif;font-weight:800;font-size:40px;
+  color:var(--head);text-align:center;line-height:1;margin:10px 0 10px;font-variant-numeric:tabular-nums}
+.et-tip{text-align:center;font-size:13px;color:var(--mute);line-height:1.6;margin-top:12px;min-height:42px}
+.et-points{display:flex;justify-content:center;gap:7px;margin-top:12px}
+.et-points i{width:8px;height:8px;border-radius:50%;background:var(--ring-bg);transition:.25s}
+.et-points i.on{background:var(--accent);transform:scale(1.25)}
+.et-points i.fait{background:var(--menthe)}
+.et-item{display:flex;align-items:center;gap:11px;padding:9px 0;border-bottom:1px solid var(--border)}
+.et-item:last-of-type{border-bottom:none;margin-bottom:12px}
+.et-item b{flex:1;font-size:13.5px;color:var(--head);font-weight:600}
+.et-item span{font-size:12px;color:var(--mute)}
+.et-item .n{width:22px;height:22px;border-radius:50%;background:var(--accent-soft);color:var(--head);
+  font-size:11.5px;font-weight:700;display:grid;place-items:center;flex:none}
+
+/* ---------- étirements ---------- */
+.et-li{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--border)}
+.et-li:last-of-type{border-bottom:none}
+.et-li svg{width:34px;height:40px;flex:none}
+.et-li b{display:block;font-size:14px;color:var(--head);font-weight:600}
+.et-li span{font-size:11.5px;color:var(--mute)}
+.et-li .s{font-size:12px;color:var(--mute);font-variant-numeric:tabular-nums;flex:none}
+.et-fig{display:grid;place-items:center;padding:8px 0 4px}
+.et-fig svg{width:132px;height:154px}
+.et-fig .co{stroke:var(--head);stroke-width:3;stroke-linecap:round;stroke-linejoin:round;fill:none}
+.et-fig .ac{stroke:var(--accent);stroke-width:3;stroke-linecap:round;stroke-linejoin:round;fill:none}
+.et-fig .hi{stroke:var(--accent);stroke-width:5;stroke-linecap:round;fill:none;opacity:.35}
+.et-nom{text-align:center;font-family:"Bricolage Grotesque",sans-serif;font-weight:800;
+  font-size:17px;color:var(--head);margin-top:4px}
+.et-sec{text-align:center;font-family:"Bricolage Grotesque",sans-serif;font-weight:800;
+  font-size:44px;line-height:1.1;color:var(--accent);font-variant-numeric:tabular-nums}
+.et-txt{text-align:center;font-size:13px;color:var(--mute);line-height:1.6;margin-top:12px;min-height:42px}
+.et-dots{display:flex;justify-content:center;gap:7px;margin-top:12px}
+.et-dots i{width:8px;height:8px;border-radius:50%;background:var(--ring-bg);transition:.3s}
+.et-dots i.on{background:var(--accent);transform:scale(1.25)}
+.et-dots i.done{background:var(--menthe)}
+
 /* ---------- lecteur de livres ---------- */
 .bk-item{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--border)}
 .bk-item:last-child{border-bottom:none}
@@ -557,6 +606,52 @@ a{color:var(--accent)}
       <div class="pillrow" style="justify-content:center">
         <button class="pill on" data-min="1">1 min</button><button class="pill" data-min="3">3 min</button>
         <button class="pill" data-min="5">5 min</button><button class="pill" data-min="10">10 min</button>
+      </div>
+    </div>
+
+    <div class="card" id="et-card">
+      <h2>Étirements express</h2>
+      <div class="sub">2 minutes · la nuque, les épaules, le bas du dos</div>
+
+      <div id="et-idle">
+        <div id="et-liste"></div>
+        <button class="btn solid wide" id="et-start">Commencer</button>
+      </div>
+
+      <div id="et-run" class="hidden">
+        <div class="et-fig" id="et-svg"></div>
+        <div class="et-nom" id="et-nom">—</div>
+        <div class="et-sec" id="et-sec">0</div>
+        <div class="bar"><i id="et-bar"></i></div>
+        <div class="et-txt" id="et-txt">—</div>
+        <div class="et-dots" id="et-dots"></div>
+        <div class="two" style="margin-top:14px">
+          <button class="btn" id="et-skip">Passer</button>
+          <button class="btn ghost" id="et-stop">Arrêter</button>
+        </div>
+      </div>
+    </div>
+
+
+    <div class="card">
+      <h2>Étirements express</h2>
+      <div class="sub">2 minutes · 5 mouvements, pour le dos et la nuque</div>
+      <div id="et-repos">
+        <div id="et-liste"></div>
+        <button class="btn solid wide" id="et-go">Commencer</button>
+      </div>
+      <div id="et-cours" class="hidden">
+        <div class="et-scene"><svg id="et-dessin" viewBox="0 0 120 120" aria-hidden="true"></svg></div>
+        <div class="et-nom" id="et-nom">—</div>
+        <div class="et-cote" id="et-cote">—</div>
+        <div class="et-num" id="et-num">0</div>
+        <div class="bar"><i id="et-bar"></i></div>
+        <div class="et-tip" id="et-tip">—</div>
+        <div class="et-points" id="et-points"></div>
+        <div class="two" style="margin-top:14px">
+          <button class="btn" id="et-passer">Passer</button>
+          <button class="btn ghost" id="et-stop">Arrêter</button>
+        </div>
       </div>
     </div>
   </section>
@@ -786,7 +881,7 @@ const FIREBASE_CONFIG = {
 const VAPID_KEY = "BHF4uyKx2qXYuDTYFraniyKXRA2nac0o_AOp5WdL46onWZUI4ZTATnyZfi0AsL_7jVxXMrdiDmiYyFCNuhNd2q0";
 
 const FB_READY = !FIREBASE_CONFIG.apiKey.startsWith("COLLE");
-const APP_VERSION = "3.8.2";   // doit être identique à VERSION dans sw.js
+const APP_VERSION = "3.9.0";   // doit être identique à VERSION dans sw.js
 
 /* ============================================================
    2) OUTILS
@@ -1007,7 +1102,7 @@ function pauseTimes(){
 const TXT = {
   eau:  ["💧 Un verre d'eau", "Bois maintenant, tu te sentiras mieux."],
   repas: m => ["🍽️ " + m, "C'est le moment de manger. Assieds-toi 10 minutes."],
-  pause:["🧘 Pause de 2 minutes", "Respire. Le service tiendra deux minutes sans toi."],
+  pause:["🧘 Pause de 2 minutes", "Respire ou étire-toi. Le service tiendra deux minutes sans toi."],
   mood: ["💗 Comment s'est passée ta journée ?", "Une minute pour noter ton humeur."],
   sleep:["🌙 Il est l'heure de dormir", "Demain commence tôt. Repose-toi."]
 };
@@ -1486,7 +1581,7 @@ function hello(){
   const hi = h < 12 ? "Bonjour" : h < 18 ? "Bon après-midi" : "Bonsoir";
   $("#hd-hello").textContent = `${hi}, ${S.profile.name || "Yossr"} 🌸`;
 }
-function renderRelax(){}
+function renderRelax(){ renderEtire(); }
 
 /* ---------- Coran & adhkar ---------- */
 const BQ_TOTAL = () => S.quran?.total || 286;
@@ -1607,9 +1702,24 @@ $("#w-undo").addEventListener("click", () => {
   d.water = Math.max(0, d.water - d.adds.pop()); save(); renderWater();
 });
 
+/** Deux façons de souffler : on laisse choisir plutôt que d'imposer. */
 function addPause(){
-  const d = day(); d.pauses++; save(); vibrate(20);
-  toast("Pause notée. Respire 🌿"); go("p-relax"); startBreath(120);
+  openSheet(`<div class="sh-head"><h2>Deux minutes pour toi</h2></div>
+    <div class="sub" style="margin-bottom:14px">Les deux comptent comme une pause.</div>
+    <button class="btn wide" id="ps-resp" style="text-align:left;padding:16px">
+      <b style="display:block;color:var(--head);font-size:15px">🧘 Respiration</b>
+      <span style="font-size:12.5px;color:var(--mute)">Quand la tête est pleine</span></button>
+    <button class="btn wide" id="ps-etire" style="text-align:left;padding:16px;margin-top:10px">
+      <b style="display:block;color:var(--head);font-size:15px">🤸 Étirements</b>
+      <span style="font-size:12.5px;color:var(--mute)">Quand le dos et la nuque tirent</span></button>`);
+
+  $("#ps-resp").addEventListener("click", () => {
+    closeSheet();
+    const d = day(); d.pauses++; save(); vibrate(20);
+    toast("Pause notée. Respire 🌿");
+    go("p-relax"); startBreath(120);
+  });
+  $("#ps-etire").addEventListener("click", () => { closeSheet(); etDemarrer(); });
 }
 $("#btn-pause").addEventListener("click", addPause);
 
@@ -2336,6 +2446,142 @@ $$("#dh-every .pill").forEach(b => b.addEventListener("click", async () => {
   S.profile.dhikrEvery = +b.dataset.every; S.profile.lastDhikr = 0; renderRappels();
   await confirmerRappel();
 }));
+
+
+/* ============================================================
+   12 bis) ÉTIREMENTS EXPRESS
+   Six temps, deux minutes. Les dessins sont tracés ici même :
+   rien à télécharger, ça marche sans réseau.
+   ============================================================ */
+const CORPS = `<path class="co" d="M60 52 L60 96"/>
+  <path class="co" d="M60 96 L46 132 M60 96 L74 132"/>`;
+
+const ETIRE = [
+  { nom:"Nuque — côté droit", sec:20,
+    txt:"Penche doucement l'oreille vers l'épaule droite. L'autre épaule reste basse. Ne force pas.",
+    svg:`<circle class="co" cx="70" cy="32" r="14"/>
+      <path class="co" d="M62 45 L60 52"/>${CORPS}
+      <path class="co" d="M60 62 L38 82 M60 62 L82 82"/>
+      <path class="hi" d="M48 34 Q52 22 64 18"/>
+      <path class="ac" d="M40 44 A22 22 0 0 1 52 24"/>
+      <path class="ac" d="M52 24 l-7 1 M52 24 l2 6"/>` },
+
+  { nom:"Nuque — côté gauche", sec:20,
+    txt:"La même chose de l'autre côté. Respire pendant que tu tiens.",
+    svg:`<circle class="co" cx="50" cy="32" r="14"/>
+      <path class="co" d="M58 45 L60 52"/>${CORPS}
+      <path class="co" d="M60 62 L38 82 M60 62 L82 82"/>
+      <path class="hi" d="M72 34 Q68 22 56 18"/>
+      <path class="ac" d="M80 44 A22 22 0 0 0 68 24"/>
+      <path class="ac" d="M68 24 l7 1 M68 24 l-2 6"/>` },
+
+  { nom:"Épaules", sec:20,
+    txt:"Roule les épaules vers l'arrière, lentement. Rapproche les omoplates, puis relâche.",
+    svg:`<circle class="co" cx="60" cy="30" r="14"/>
+      <path class="co" d="M60 44 L60 52"/>${CORPS}
+      <path class="co" d="M60 64 L36 76 M60 64 L84 76"/>
+      <path class="hi" d="M42 62 L78 62"/>
+      <path class="ac" d="M34 58 A12 12 0 1 1 34 70"/>
+      <path class="ac" d="M34 70 l6 -3 M34 70 l1 -6"/>
+      <path class="ac" d="M86 58 A12 12 0 1 0 86 70"/>
+      <path class="ac" d="M86 70 l-6 -3 M86 70 l-1 -6"/>` },
+
+  { nom:"Bas du dos", sec:25,
+    txt:"Mains sur les hanches, ouvre la poitrine et penche-toi doucement en arrière. C'est l'inverse de ta journée.",
+    svg:`<circle class="co" cx="70" cy="30" r="14"/>
+      <path class="co" d="M66 44 Q58 66 56 96"/>
+      <path class="co" d="M56 96 L46 132 M56 96 L68 132"/>
+      <path class="co" d="M62 62 L44 78 M62 62 L76 80"/>
+      <path class="hi" d="M58 78 Q56 88 56 96"/>
+      <path class="ac" d="M84 96 A26 26 0 0 0 82 58"/>
+      <path class="ac" d="M82 58 l6 3 M82 58 l-2 6"/>` },
+
+  { nom:"Poignets", sec:20,
+    txt:"Bras tendu, tourne la main d'un côté puis de l'autre. Cinq fois chaque sens.",
+    svg:`<path class="co" d="M24 92 L74 92"/>
+      <path class="co" d="M74 92 L92 84 M74 92 L92 98"/>
+      <path class="hi" d="M66 92 L80 92"/>
+      <circle class="co" cx="24" cy="92" r="7"/>
+      <path class="ac" d="M74 66 A26 26 0 0 1 74 118"/>
+      <path class="ac" d="M74 66 l-6 4 M74 66 l1 7"/>
+      <path class="ac" d="M74 118 l-6 -4 M74 118 l1 -7"/>` },
+
+  { nom:"Mollets", sec:20,
+    txt:"Monte sur la pointe des pieds, tiens deux secondes, redescends. Ça renvoie le sang vers le haut.",
+    svg:`<circle class="co" cx="60" cy="24" r="13"/>
+      <path class="co" d="M60 37 L60 84"/>
+      <path class="co" d="M60 50 L42 66 M60 50 L78 66"/>
+      <path class="co" d="M60 84 L50 116 M60 84 L70 116"/>
+      <path class="co" d="M50 116 L44 122 M70 116 L76 122"/>
+      <path class="hi" d="M50 100 L52 114 M70 100 L68 114"/>
+      <path class="ac" d="M96 108 L96 74"/>
+      <path class="ac" d="M96 74 l-5 6 M96 74 l5 6"/>` }
+];
+
+const etTotal = ETIRE.reduce((n, e) => n + e.sec, 0);
+let etIdx = -1, etLeft = 0, etTimer = null;
+
+function etDessin(e, cls = "et-fig"){
+  return `<svg viewBox="0 0 120 140" xmlns="http://www.w3.org/2000/svg">${e.svg}</svg>`;
+}
+
+function renderEtire(){
+  if(!$("#et-liste")) return;
+  $("#et-liste").innerHTML = ETIRE.map(e => `
+    <div class="et-li">${etDessin(e)}
+      <div><b>${e.nom}</b><span>${e.txt.split(".")[0]}.</span></div>
+      <div class="s">${e.sec} s</div></div>`).join("")
+    + `<div class="sub" style="margin:12px 0 14px">Durée totale : ${Math.round(etTotal/60*10)/10} min. Ça compte comme une pause.</div>`;
+}
+
+function etAfficher(){
+  const e = ETIRE[etIdx];
+  $("#et-svg").innerHTML  = etDessin(e);
+  $("#et-nom").textContent = e.nom;
+  $("#et-txt").textContent = e.txt;
+  $("#et-sec").textContent = etLeft;
+  $("#et-bar").style.width = ((e.sec - etLeft) / e.sec * 100) + "%";
+  $("#et-dots").innerHTML = ETIRE.map((_, i) =>
+    `<i class="${i < etIdx ? "done" : i === etIdx ? "on" : ""}"></i>`).join("");
+}
+
+function etSuivant(){
+  etIdx++;
+  if(etIdx >= ETIRE.length) return etFini();
+  etLeft = ETIRE[etIdx].sec;
+  etAfficher();
+  vibrate(18);
+}
+
+function etDemarrer(){
+  go("p-relax");
+  $("#et-idle").classList.add("hidden");
+  $("#et-run").classList.remove("hidden");
+  clearInterval(etTimer);
+  etIdx = -1; etSuivant();
+  etTimer = setInterval(() => {
+    etLeft--;
+    if(etLeft <= 0) etSuivant(); else etAfficher();
+  }, 1000);
+}
+
+function etArreter(fini){
+  clearInterval(etTimer); etTimer = null; etIdx = -1;
+  $("#et-run")?.classList.add("hidden");
+  $("#et-idle")?.classList.remove("hidden");
+}
+
+function etFini(){
+  etArreter(true);
+  const d = day(); d.pauses++; save();
+  vibrate([30,60,30]);
+  toast("Étirements finis. Ton dos te remercie 🌸");
+  renderHome();
+}
+
+$("#et-start").addEventListener("click", etDemarrer);
+$("#et-skip").addEventListener("click", () => { etSuivant(); });
+$("#et-stop").addEventListener("click", () => { etArreter(false); toast("Arrêté"); });
 
 /* ============================================================
    13) THEME
