@@ -80,8 +80,12 @@ button{border:none;background:none;cursor:pointer}
 .dial{width:min(330px,84vw);height:min(330px,84vw);display:block;overflow:visible}
 .dial .track{fill:none;stroke:var(--ring-bg);stroke-width:13}
 .dial .shift{fill:none;stroke:var(--accent);stroke-width:13;stroke-linecap:round;opacity:.32}
-.dial .prog{fill:none;stroke:var(--accent);stroke-width:13;stroke-linecap:round;
-  transition:stroke-dasharray .9s cubic-bezier(.2,.9,.2,1)}
+.dial .prog{fill:none;stroke:var(--accent);stroke-width:9;stroke-linecap:round;
+  transition:d .9s cubic-bezier(.2,.9,.2,1)}
+.dial .prog-bg{fill:none;stroke:var(--ring-bg);stroke-width:9}
+.dial .tick-h{stroke:var(--border);stroke-width:1.5;stroke-linecap:round}
+.dial .hand-h{stroke:var(--head);stroke-width:4;stroke-linecap:round}
+.dial .hand-m{stroke:var(--accent);stroke-width:2.5;stroke-linecap:round}
 .dial .tick{stroke:var(--border);stroke-width:2}
 .dial .hour{fill:var(--mute);font-size:10px;font-weight:600;font-family:"Instrument Sans";text-anchor:middle}
 .dial .needle{stroke:var(--head);stroke-width:2.5;stroke-linecap:round}
@@ -93,7 +97,8 @@ button{border:none;background:none;cursor:pointer}
 .dot.pop{animation:pop .5s cubic-bezier(.2,1.7,.4,1)}
 @keyframes pop{0%{transform:scale(1)}45%{transform:scale(1.55)}100%{transform:scale(1)}}
 .dial-center{position:absolute;text-align:center;pointer-events:none}
-.dial-center .pct{font-family:"Bricolage Grotesque";font-weight:800;font-size:46px;line-height:1;color:var(--head)}
+.dial-center .pct{font-family:"Bricolage Grotesque";font-weight:800;font-size:42px;line-height:1;
+  color:var(--head);font-variant-numeric:tabular-nums;letter-spacing:-.02em}
 .dial-center .lbl{font-size:11.5px;color:var(--mute);margin-top:6px;letter-spacing:.06em;text-transform:uppercase;font-weight:600}
 .legend{display:flex;justify-content:center;gap:14px;flex-wrap:wrap;margin-top:10px;font-size:11.5px;color:var(--mute)}
 .legend i{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:5px;vertical-align:middle}
@@ -206,6 +211,7 @@ svg.chart text{font-size:9px;fill:var(--mute);font-family:"Instrument Sans"}
 .jrn .jb b{display:block;font-size:13px;color:var(--head);font-weight:600;margin-bottom:3px}
 .jrn .jb p{margin:0;font-size:13.5px;color:var(--text);line-height:1.55;white-space:pre-wrap}
 .jrn .jb i{font-style:normal;font-size:12.5px;color:var(--mute)}
+.jrn .del{flex:none;align-self:flex-start;margin-top:-2px}
 
 /* ---------- en-tête fixe ---------- */
 #topbar{position:sticky;top:0;z-index:30;padding:calc(var(--safe-t) + 12px) 16px 0;
@@ -443,8 +449,8 @@ a{color:var(--accent)}
       <div class="dial-wrap">
         <svg class="dial" viewBox="-32 -32 304 304" id="dial" aria-label="Anneau de garde"></svg>
         <div class="dial-center">
-          <div class="pct" id="dial-pct">0%</div>
-          <div class="lbl">aujourd'hui</div>
+          <div class="pct" id="clock-now">--:--</div>
+          <div class="lbl" id="clock-sub">—</div>
         </div>
       </div>
       <div class="legend">
@@ -452,6 +458,7 @@ a{color:var(--accent)}
         <span><i style="background:var(--accent)"></i>à faire maintenant</span>
         <span><i style="background:var(--ring-bg)"></i>plus tard</span>
       </div>
+      <div class="legend" style="margin-top:4px"><span id="dial-note">—</span></div>
     </div>
 
     <div class="tiles" id="home-tiles"></div>
@@ -576,6 +583,16 @@ a{color:var(--accent)}
       <button class="btn ghost wide" id="bq-reset">Repartir de zéro</button>
     </div>
 
+    <div class="card">
+      <h2>Rappel de lecture</h2>
+      <div class="item" style="padding-top:4px"><div class="name"><b>Me rappeler chaque jour</b>
+        <span id="bq-rem-state">—</span></div><div class="sw" id="sw-bq"></div></div>
+      <label class="f">À quelle heure</label>
+      <input class="in" type="time" id="bq-time" value="07:30">
+      <div class="sub" style="margin-top:10px">Le soir, si la sourate n'est pas finie,
+        l'app te dit combien de versets il reste.</div>
+    </div>
+
     <div class="card"><h2>Les 7 derniers jours</h2>
       <div class="hist" id="bq-hist"></div>
       <div class="sub" id="bq-streak" style="margin-top:12px">—</div></div>
@@ -592,6 +609,19 @@ a{color:var(--accent)}
       <div class="two" style="margin-top:12px">
         <button class="btn" id="dhikr-next">Un autre dhikr</button>
         <button class="btn ghost" id="tas-reset">Remettre à zéro</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Rappel de dhikr</h2>
+      <div class="sub">Un rappel régulier pendant la journée, dans l'ordre de la liste</div>
+      <div class="item"><div class="name"><b>Activer</b><span id="dh-state">—</span></div>
+        <div class="sw" id="sw-dhikr"></div></div>
+      <div class="pillrow" id="dh-every">
+        <button class="pill" data-every="10">10 min</button>
+        <button class="pill" data-every="15">15 min</button>
+        <button class="pill" data-every="30">30 min</button>
+        <button class="pill" data-every="60">1 h</button>
       </div>
     </div>
 
@@ -660,20 +690,6 @@ a{color:var(--accent)}
         <div class="sw" id="sw-notif"></div></div>
       <div class="item"><div class="name"><b>Pause toutes les 2 h</b><span>Deux minutes pour respirer</span></div>
         <div class="sw" id="sw-pause"></div></div>
-      <div class="item"><div class="name"><b>Lecture d'Al-Baqara</b><span id="bq-rem-state">—</span></div>
-        <div class="sw" id="sw-bq"></div></div>
-      <label class="f">Heure de la lecture</label>
-      <input class="in" type="time" id="bq-time" value="07:30">
-      <div class="sub" style="margin-top:8px">Le soir, si la sourate n'est pas finie,
-        l'app te dit combien de versets il reste.</div>
-      <div class="item" style="margin-top:6px"><div class="name"><b>Dhikr régulier</b><span id="dh-state">—</span></div>
-        <div class="sw" id="sw-dhikr"></div></div>
-      <div class="pillrow" id="dh-every">
-        <button class="pill" data-every="10">10 min</button>
-        <button class="pill" data-every="15">15 min</button>
-        <button class="pill" data-every="30">30 min</button>
-        <button class="pill" data-every="60">1 h</button>
-      </div>
     </div>
 
     <div class="card">
@@ -716,7 +732,7 @@ const FIREBASE_CONFIG = {
 const VAPID_KEY = "BHF4uyKx2qXYuDTYFraniyKXRA2nac0o_AOp5WdL46onWZUI4ZTATnyZfi0AsL_7jVxXMrdiDmiYyFCNuhNd2q0";
 
 const FB_READY = !FIREBASE_CONFIG.apiKey.startsWith("COLLE");
-const APP_VERSION = "3.3.0";   // doit être identique à VERSION dans sw.js
+const APP_VERSION = "3.4.0";   // doit être identique à VERSION dans sw.js
 
 /* ============================================================
    2) OUTILS
@@ -746,7 +762,7 @@ const DEFAULT_STATE = {
   v: 1,
   profile: { name:"", weight:60, waterGoal:2100, wake:"06:30", bed:"22:30",
              notif:false, pauseOn:true, height:165, hideInstall:false,
-             dhikrOn:false, dhikrEvery:10, lastDhikr:0, tasGoal:33 },
+             dhikrOn:false, dhikrEvery:10, lastDhikr:0, dhikrIdx:0, tasGoal:33 },
   quran: { on:true, time:"07:30", total:286 },
   schedule: { 0:{off:true,start:"08:00",end:"14:00"}, 1:{off:false,start:"08:00",end:"14:00"},
               2:{off:false,start:"08:00",end:"14:00"}, 3:{off:false,start:"08:00",end:"14:00"},
@@ -1041,43 +1057,72 @@ const arc = (cx, cy, r, d1, d2) => {
 const degOf = min => (((min % 1440) + 1440) % 1440) / 1440 * 360;
 
 function drawDial(){
-  const C = 120, R = 100, Ri = 76;
+  const C = 120, R = 100, Ri = 78;
   const sh = shiftFor(), p = progress(), rems = remindersToday(), now = nowMin();
+  const d = new Date();
   let g = "";
 
+  // ---- cadran 24 h : le tour du cadran = une journée ----
   g += `<circle class="track" cx="${C}" cy="${C}" r="${R}"/>`;
   if(!sh.off){
     const a = degOf(toMin(sh.start));
     let b = degOf(toMin(sh.end)); if(b <= a) b += 360;
     g += `<path class="shift" d="${arc(C,C,R,a,b)}"/>`;
   }
-  for(let h = 0; h < 24; h += 2){
-    const [x1,y1] = POL(C,C,R+10,degOf(h*60)), [x2,y2] = POL(C,C,R+(h%6===0?16:13),degOf(h*60));
-    g += `<line class="tick" x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}"/>`;
+  for(let hh = 0; hh < 24; hh++){
+    const gros = hh % 6 === 0;
+    const [x1,y1] = POL(C,C,R+9,degOf(hh*60));
+    const [x2,y2] = POL(C,C,R+(gros?17:12),degOf(hh*60));
+    g += `<line class="${gros?"tick":"tick-h"}" x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}"/>`;
   }
-  [0,6,12,18].forEach(h => {
-    const [x,y] = POL(C,C,R+25,degOf(h*60));
-    g += `<text class="hour" x="${x.toFixed(1)}" y="${(y+3).toFixed(1)}">${pad(h)}h</text>`;
+  [0,6,12,18].forEach(hh => {
+    const [x,y] = POL(C,C,R+26,degOf(hh*60));
+    g += `<text class="hour" x="${x.toFixed(1)}" y="${(y+3).toFixed(1)}">${pad(hh)}h</text>`;
   });
 
-  g += `<path class="prog" d="${arc(C,C,Ri,0,Math.max(0.1,p.total*359.9))}"/>`;
+  // ---- anneau de progression : c'est la couleur qui dit où elle en est ----
+  g += `<circle class="prog-bg" cx="${C}" cy="${C}" r="${Ri}"/>`;
+  if(p.total > 0.004)
+    g += `<path class="prog" d="${arc(C,C,Ri,0,Math.max(1,p.total*359.9))}"/>`;
 
+  // ---- les rappels, posés à leur heure ----
   rems.filter(r => r.type !== "sleep" && r.id !== "coran-soir").forEach(r => {
-    const m = toMin(r.at), done = isDone(r);
-    const cls = done ? "done" : (m <= now ? "late" : "todo");
+    const m = toMin(r.at), s = remStatus(r);
+    const cls = s === "done" ? "done" : s === "seen" ? "todo" : (m <= now ? "late" : "todo");
     const [x,y] = POL(C,C,R,degOf(m));
-    const ico = { eau:"💧", repas:"🍽️", pause:"🧘", mood:"💗" }[r.type] || "•";
-    g += `<g class="dot ${cls}" data-page="${r.page}" data-t="${r.at}"><circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="7"/>
-      <title>${ico} ${r.at} — ${done ? "fait" : "à faire"}</title></g>`;
+    const ico = { eau:"💧", repas:"🍽️", pause:"🧘", mood:"💗", coran:"📖" }[r.type] || "•";
+    g += `<g class="dot ${cls}" data-page="${r.page}"><circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="7"/>
+      <title>${ico} ${r.at}</title></g>`;
   });
 
-  const [nx,ny] = POL(C,C,R-20,degOf(now));
-  g += `<line class="needle" x1="${C}" y1="${C}" x2="${nx.toFixed(1)}" y2="${ny.toFixed(1)}"/>`;
-  g += `<circle cx="${C}" cy="${C}" r="3.5" fill="var(--head)"/>`;
+  // ---- aiguilles ----
+  const mDeg = d.getMinutes() * 6 + d.getSeconds() * 0.1;
+  const hDeg = (d.getHours() % 12) * 30 + d.getMinutes() * 0.5;
+  const [hx,hy] = POL(C,C,Ri-30,hDeg);
+  const [mx,my] = POL(C,C,Ri-14,mDeg);
+  g += `<line class="hand-h" x1="${C}" y1="${C}" x2="${hx.toFixed(1)}" y2="${hy.toFixed(1)}"/>`;
+  g += `<line class="hand-m" x1="${C}" y1="${C}" x2="${mx.toFixed(1)}" y2="${my.toFixed(1)}"/>`;
+  g += `<circle cx="${C}" cy="${C}" r="4" fill="var(--head)"/>`;
+  g += `<circle cx="${C}" cy="${C}" r="1.6" fill="var(--surface)"/>`;
 
   $("#dial").innerHTML = g;
-  $("#dial-pct").textContent = p.pct + "%";
   $$("#dial .dot").forEach(el => el.addEventListener("click", () => go(el.dataset.page)));
+  drawClock();
+}
+
+/** L'heure au centre, et ce qu'il reste à faire. */
+function drawClock(){
+  const d = new Date();
+  const e = $("#clock-now"); if(!e) return;
+  e.textContent = pad(d.getHours()) + ":" + pad(d.getMinutes());
+
+  const reste = remindersToday().filter(r => remStatus(r) === "todo").length;
+  const tard  = lateCount();
+  $("#clock-sub").textContent = tard ? tard + " en retard"
+    : reste ? reste + " à venir" : "rien à faire ✓";
+
+  const n = $("#dial-note");
+  if(n) n.textContent = "L'anneau intérieur se remplit à mesure que ta journée avance.";
 }
 
 /* ============================================================
@@ -1229,8 +1274,17 @@ function renderMood(){
       <div class="je">${MOOD_EMOJI[e.mood] || "•"}</div>
       <div class="jb"><b>${DAYS_FR[dt.getDay()]} · ${bits.join(" · ")}</b>
         ${e.note ? `<p>${escapeHtml(e.note)}</p>` : `<i>Pas de note ce jour-là</i>`}</div>
+      <button class="del" data-jour="${k}" aria-label="Effacer cette journée">✕</button>
     </div>`;
   }).join("") : `<div class="empty">Rien pour l'instant.<br>Note ton humeur ce soir, tu la reliras plus tard.</div>`;
+
+  $$("#mood-hist [data-jour]").forEach(b => b.addEventListener("click", () => {
+    const kk = b.dataset.jour, dd = S.days[kk];
+    if(!dd) return;
+    if(!confirm("Effacer l'humeur et la note de cette journée ?\nLe reste (eau, repas…) ne bouge pas.")) return;
+    dd.mood = null; dd.energy = null; dd.note = "";
+    save(); renderMood(); toast("Effacé");
+  }));
 }
 
 function renderSleep(){
@@ -1323,7 +1377,7 @@ function renderSet(){
 function render(id){
   ({ "p-home":renderHome, "p-water":renderWater, "p-meals":renderMeals, "p-mood":renderMood,
      "p-sleep":renderSleep, "p-notes":renderNotes, "p-relax":renderRelax,
-     "p-dhikr":renderDhikr,
+     "p-dhikr":() => { renderDhikr(); renderRappels(); },
      "p-set":() => { renderSet(); renderSched(); renderRappels(); }
    }[id] || (()=>{}))();
   bellBadge();
@@ -1570,8 +1624,7 @@ function openBell(){
     <div class="sub">${shiftLabel(shiftFor())}</div>
     ${n ? `<button class="btn sm wide" id="rem-clear" style="margin-top:12px">Tout marquer comme vu</button>` : ""}`;
 
-  const push = perm === "granted"
-    ? `<div class="sub" style="margin-top:14px">🔔 Les notifications du téléphone sont activées.</div>`
+  const push = perm === "granted" ? ""
     : `<div class="card" style="margin-top:14px;box-shadow:none">
          <div class="sub">Reçois aussi les rappels quand l'app est fermée.</div>
          <button class="btn solid wide" id="bell-allow" style="margin-top:10px">Activer les notifications</button>
@@ -1695,7 +1748,9 @@ function dhikrTick(){
   const every = Math.max(5, p.dhikrEvery || 10) * 60000;
   if(Date.now() - lastDhikrAt() < every) return;
   setLastDhikr(Date.now());
-  const d = DHIKR[Math.floor(Math.random() * DHIKR.length)];
+  const i = Number(S.profile.dhikrIdx || 0) % DHIKR.length;
+  const d = DHIKR[i];
+  S.profile.dhikrIdx = (i + 1) % DHIKR.length;
   fire({ id:"dhikr", title:d[0], body:"📿 " + d[1], page:"p-dhikr" }, false);
 }
 
@@ -1717,6 +1772,7 @@ function tick(){
   }
 }
 function drawDialSafe(){ if($("#p-home").classList.contains("on")) drawDial(); }
+setInterval(() => { if($("#p-home")?.classList.contains("on")) drawClock(); }, 20000);
 setInterval(tick, 30000);
 
 /* ---- Cloud Messaging (push depuis un serveur) ---- */
