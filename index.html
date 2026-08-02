@@ -786,7 +786,7 @@ const FIREBASE_CONFIG = {
 const VAPID_KEY = "BHF4uyKx2qXYuDTYFraniyKXRA2nac0o_AOp5WdL46onWZUI4ZTATnyZfi0AsL_7jVxXMrdiDmiYyFCNuhNd2q0";
 
 const FB_READY = !FIREBASE_CONFIG.apiKey.startsWith("COLLE");
-const APP_VERSION = "3.8.1";   // doit être identique à VERSION dans sw.js
+const APP_VERSION = "3.8.2";   // doit être identique à VERSION dans sw.js
 
 /* ============================================================
    2) OUTILS
@@ -860,9 +860,21 @@ let planTimer = null;
    de Firestore une fois les journées passées allégées. */
 const GARDER = 1100;
 
+/** Une journée à venir qui ne contient rien n'a pas à exister. */
+function jourVide(d){
+  return !d || (!d.water && !d.pauses && !d.quran && !d.tasbih
+    && d.mood == null && !d.sleep && !d.note
+    && !Object.keys(d.meals || {}).length
+    && !(d.fired || []).length && !(d.seen || []).length);
+}
+
 function paquet(){
   const t = structuredClone(S);
   const auj = todayKey();
+  // filet de sécurité : même si l'état a été repollué entre-temps,
+  // rien de vide et de futur ne part dans le compte.
+  for(const k of Object.keys(t.days))
+    if(k > auj && jourVide(t.days[k])) delete t.days[k];
   const keys = Object.keys(t.days).sort().slice(-GARDER);
   t.days = Object.fromEntries(keys.map(k => {
     const d = t.days[k];
@@ -2420,13 +2432,7 @@ function menage(){
   const auj = todayKey();
   let n = 0;
   for(const k of Object.keys(S.days || {})){
-    if(k <= auj) continue;
-    const d = S.days[k];
-    const vide = !d || (!d.water && !d.pauses && !d.quran && !d.tasbih
-      && d.mood == null && !d.sleep && !d.note
-      && !Object.keys(d.meals || {}).length
-      && !(d.fired || []).length && !(d.seen || []).length);
-    if(vide){ delete S.days[k]; n++; }
+    if(k > auj && jourVide(S.days[k])){ delete S.days[k]; n++; }
   }
   return n;
 }
@@ -2449,6 +2455,7 @@ async function pullCloud(uid){
   unsub = fb.onSnapshot(ref, s => {
     if(!s.exists() || s.metadata.hasPendingWrites) return;
     S = Object.assign(structuredClone(DEFAULT_STATE), s.data());
+    if(menage()) save();          // la copie du serveur peut être ancienne
     const cur = $$(".page.on")[0];
     if(!$("#app").classList.contains("hidden") && cur) render(cur.id);
   }, e => console.warn("snapshot", e));
