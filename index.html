@@ -262,6 +262,12 @@ svg.chart text{font-size:9px;fill:var(--mute);font-family:"Instrument Sans"}
 .rem.late .t{color:var(--accent)}
 .rem.late .s{background:var(--accent)}
 .rem.todo .s{background:var(--ring-bg)}
+.rem.seen{opacity:.55}
+.rem.seen .s{background:var(--mute)}
+.rem .t,.rem .b{cursor:pointer}
+.rem-ok{width:30px;height:30px;border-radius:50%;flex:none;border:1.5px solid var(--accent);
+  color:var(--accent);font-size:14px;display:grid;place-items:center;transition:.18s}
+.rem-ok:active{transform:scale(.9);background:var(--accent);color:#fff}
 .rem.done .s{background:var(--menthe)}
 .rem.done .b b{color:var(--mute);text-decoration:line-through}
 .sh-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:6px}
@@ -675,7 +681,6 @@ a{color:var(--accent)}
       <div class="sub">Pour recevoir les rappels même quand l'app n'est pas ouverte</div>
       <div class="diag" id="push-state"><i></i><div><b>—</b><span>—</span></div></div>
       <button class="btn wide" id="btn-push">Réessayer la connexion</button>
-      <button class="btn ghost wide hidden" id="btn-token">Voir le jeton (pour un test)</button>
     </div>
     <div class="card">
       <h2>Données</h2>
@@ -710,7 +715,7 @@ const FIREBASE_CONFIG = {
 const VAPID_KEY = "BHF4uyKx2qXYuDTYFraniyKXRA2nac0o_AOp5WdL46onWZUI4ZTATnyZfi0AsL_7jVxXMrdiDmiYyFCNuhNd2q0";
 
 const FB_READY = !FIREBASE_CONFIG.apiKey.startsWith("COLLE");
-const APP_VERSION = "2.9.0";   // doit être identique à VERSION dans sw.js
+const APP_VERSION = "3.0.0";   // doit être identique à VERSION dans sw.js
 
 /* ============================================================
    2) OUTILS
@@ -751,6 +756,7 @@ const DEFAULT_STATE = {
   notes:  [],
   fcmToken: null,
   fcmTokens: [],
+  push: null,          // plan lu par le serveur
   onboarded: false
 };
 let S = structuredClone(DEFAULT_STATE);
@@ -759,7 +765,7 @@ let fb = null;                    // { db, auth, doc, setDoc, ... }
 
 const blankDay = () => ({
   water:0, adds:[], meals:{}, pauses:0, mood:null, energy:null, note:"",
-  sleep:null, fired:[], quran:0, tasbih:0
+  sleep:null, fired:[], seen:[], quran:0, tasbih:0
 });
 function day(k = activeKey()){
   if(!S.days[k]) S.days[k] = blankDay();
@@ -770,8 +776,11 @@ function day(k = activeKey()){
    Le SDK garde une copie chiffrée dans le navigateur (IndexedDB) pour que
    l'app marche sans réseau ; dès que la connexion revient, il envoie tout. */
 let saveTimer = null;
+let planTimer = null;
 function save(){
   if(!fb || !UID) return;
+  clearTimeout(planTimer);
+  planTimer = setTimeout(() => { try{ buildPlan(); }catch(e){ console.warn("plan", e); } }, 60);
   syncState("wait");
   clearTimeout(saveTimer);
   saveTimer = setTimeout(async () => {
@@ -810,7 +819,9 @@ function shiftLabel(sh){
   return (sh.garde ? "Garde " : "Travail ") + sh.start.replace(":","h") + " → " + sh.end.replace(":","h");
 }
 /** La "journée de service" : si une garde commencée hier tourne encore, on reste dessus. */
+let KEY_FORCE = null;                 // sert à calculer le plan des jours suivants
 function activeKey(){
+  if(KEY_FORCE) return KEY_FORCE;
   const y = new Date(); y.setDate(y.getDate() - 1);
   const yk = keyOf(y), sh = shiftFor(yk);
   if(!sh.off && sh.garde && nowMin() < toMin(sh.end)) return yk;
@@ -923,6 +934,38 @@ function isDone(r){
   if(r.type === "coran") return (d.quran || 0) >= (S.quran?.total || 286);
   if(r.type === "sleep") return !!d.sleep;
   return false;
+}
+
+/* ============================================================
+   5 bis) LE PLAN — ce que le serveur lira pour envoyer les push
+   L'app fait tous les calculs et dépose le résultat dans Firestore.
+   Le serveur n'a plus qu'à regarder l'heure et envoyer.
+   ============================================================ */
+function buildPlan(){
+  const days = {}, save0 = KEY_FORCE;
+  const d = new Date();
+  for(let i = 0; i < 7; i++){
+    const k = keyOf(d);
+    KEY_FORCE = k;
+    try{
+      days[k] = remindersToday()
+        .filter(r => r.type !== "sleep")
+        .map(r => ({ at:r.at, t:r.title, b:r.body, p:r.page, ty:r.type, m:r.meal || "" }));
+    }catch(e){ days[k] = []; }
+    d.setDate(d.getDate() + 1);
+  }
+  KEY_FORCE = save0;
+
+  S.push = {
+    v: 1,
+    updated: Date.now(),
+    tzOffset: -new Date().getTimezoneOffset(),      // minutes à l'est de UTC
+    goal: S.profile.waterGoal,
+    dhikr: { on:!!S.profile.dhikrOn, every:S.profile.dhikrEvery || 10,
+             wake:S.profile.wake, bed:S.profile.bed },
+    adhkar: DHIKR.map(x => ({ a:x[0], n:x[1] })),
+    days
+  };
 }
 
 /* ============================================================
@@ -1284,47 +1327,12 @@ function renderPush(){
   el.className = "diag " + FCM.state;
   el.querySelector("b").textContent    = FCM_TITLE[FCM.state] || FCM.state;
   el.querySelector("span").textContent = FCM.detail;
-  const n = (S.fcmTokens || []).filter(x => x && x.t).length;
-  const bt = $("#btn-token"); if(!bt) return;
-  bt.classList.toggle("hidden", !n);
-  bt.textContent = n > 1 ? `Voir les jetons (${n} appareils)` : "Voir le jeton (pour un test)";
 }
 $("#btn-push").addEventListener("click", async () => {
   if(Notification.permission !== "granted") await askNotif();
   initFCM();
 });
 
-
-/* Le jeton sert à s'envoyer un push de test depuis la console Firebase. */
-$("#btn-token").addEventListener("click", () => {
-  const list = (S.fcmTokens || []).filter(x => x && x.t);
-  const rows = list.map((x, i) => `
-    <div class="card" style="box-shadow:none;padding:14px;margin-bottom:10px">
-      <div class="row"><div><b style="color:var(--head);font-size:14px">${escapeHtml(x.d)}</b>
-        <div class="sub">${x.t === S.fcmToken ? "cet appareil" : "vu le " +
-          new Date(x.at).toLocaleDateString("fr-FR",{day:"numeric",month:"short"})}</div></div>
-        <button class="btn sm solid" data-tok="${i}">Copier</button></div>
-      <div class="code" data-box="${i}" style="white-space:pre-wrap;word-break:break-all;user-select:all;margin-top:10px;font-size:10.5px">${escapeHtml(x.t)}</div>
-    </div>`).join("");
-
-  openSheet(`<div class="sh-head"><h2>Jetons d'envoi</h2></div>
-    <div class="sub" style="line-height:1.8;margin-bottom:14px">
-      Console Firebase → <b>Engage → Messaging</b> → écris un titre →
-      <b>Envoyer un message de test</b> → colle le jeton du téléphone → <b>+</b> → <b>Tester</b>.
-      Ferme l'app sur le téléphone avant de tester.
-    </div>${rows || '<div class="empty">Aucun appareil enregistré.</div>'}`);
-
-  $$("#sheet-body [data-tok]").forEach(b => b.addEventListener("click", async () => {
-    const t = list[+b.dataset.tok].t;
-    try{ await navigator.clipboard.writeText(t); toast("Jeton copié ✓"); }
-    catch(e){
-      const box = $(`#sheet-body [data-box="${b.dataset.tok}"]`);
-      const r = document.createRange(); r.selectNodeContents(box);
-      const s = getSelection(); s.removeAllRanges(); s.addRange(r);
-      toast("Appuie longuement puis « Copier »");
-    }
-  }));
-});
 
 /* ---------- carte Rappels (dans Réglages) ---------- */
 function renderRappels(){
@@ -1481,11 +1489,16 @@ $("#sheet .bd").addEventListener("click", closeSheet);
    Marche même quand les notifications du téléphone sont coupées.
    ============================================================ */
 function remStatus(r){
-  const done = isDone(r);
-  if(done) return "done";
+  if(isDone(r)) return "done";
+  if((day().seen || []).includes(r.id)) return "seen";
   return toMin(r.at) <= nowMin() ? "late" : "todo";
 }
 function lateCount(){ return remindersToday().filter(r => remStatus(r) === "late").length; }
+function markSeen(ids){
+  const d = day();
+  d.seen = [...new Set([...(d.seen || []), ...ids])];
+  save(); bellBadge();
+}
 
 function bellBadge(){
   const n = lateCount(), el = $("#bell-badge");
@@ -1503,7 +1516,7 @@ function closeSheet(){ $("#sheet").classList.remove("on"); }
 const REM_ICON = { eau:"💧", repas:"🍽️", pause:"🧘", mood:"💗", sleep:"🌙", coran:"📖" };
 function openBell(){
   const rems = remindersToday();
-  const order = { late:0, todo:1, done:2 };
+  const order = { late:0, todo:1, seen:2, done:3 };
   const rows = rems.map(r => ({ r, s:remStatus(r) }))
                    .sort((a,b) => order[a.s] - order[b.s] || toMin(a.r.at) - toMin(b.r.at));
   const n = rows.filter(x => x.s === "late").length;
@@ -1511,7 +1524,8 @@ function openBell(){
 
   const head = `<div class="sh-head"><h2>Rappels du jour</h2>
       <span class="chip">${n ? n + " en retard" : "tout est à jour ✓"}</span></div>
-    <div class="sub">${shiftLabel(shiftFor())}</div>`;
+    <div class="sub">${shiftLabel(shiftFor())}</div>
+    ${n ? `<button class="btn sm wide" id="rem-clear" style="margin-top:12px">Tout marquer comme vu</button>` : ""}`;
 
   const push = perm === "granted"
     ? `<div class="sub" style="margin-top:14px">🔔 Les notifications du téléphone sont activées.</div>`
@@ -1520,19 +1534,30 @@ function openBell(){
          <button class="btn solid wide" id="bell-allow" style="margin-top:10px">Activer les notifications</button>
        </div>`;
 
+  const WORD = { done:"fait ✓", late:"en retard", seen:"vu", todo:"à venir" };
   const list = rows.map(({ r, s }) => `
-    <div class="rem ${s}" data-page="${r.page}">
-      <div class="t">${r.at}</div>
-      <div class="b"><b>${REM_ICON[r.type] || "•"} ${r.title.replace(/^[^\s]+\s/, "")}</b>
-        <span>${s === "done" ? "fait ✓" : s === "late" ? "en retard" : "à venir"}</span></div>
-      <div class="s"></div>
+    <div class="rem ${s}">
+      <div class="t" data-page="${r.page}">${r.at}</div>
+      <div class="b" data-page="${r.page}"><b>${REM_ICON[r.type] || "•"} ${r.title.replace(/^[^\s]+\s/, "")}</b>
+        <span>${WORD[s]}</span></div>
+      ${s === "late"
+        ? `<button class="rem-ok" data-seen="${r.id}" aria-label="Marquer comme vu">✓</button>`
+        : `<div class="s"></div>`}
     </div>`).join("");
 
   openSheet(head + `<div style="margin-top:10px">${list}</div>` + push);
 
-  $$("#sheet-body .rem").forEach(el => el.addEventListener("click", () => {
+  $$("#sheet-body [data-page]").forEach(el => el.addEventListener("click", () => {
     closeSheet(); go(el.dataset.page);
   }));
+  $$("#sheet-body [data-seen]").forEach(b => b.addEventListener("click", e => {
+    e.stopPropagation(); markSeen([b.dataset.seen]); openBell();
+  }));
+  const clr = $("#rem-clear");
+  if(clr) clr.addEventListener("click", () => {
+    markSeen(remindersToday().filter(r => remStatus(r) === "late").map(r => r.id));
+    openBell(); toast("C'est noté 🌸");
+  });
   const allow = $("#bell-allow");
   if(allow) allow.addEventListener("click", async () => { closeSheet(); await askNotif(); });
 }
@@ -2017,6 +2042,7 @@ function enterApp(){
   $("#gate-auth").classList.add("hidden"); $("#gate-onb").classList.add("hidden");
   $("#app").classList.remove("hidden");
   applyTheme(); hello(); showInstallBar(); go("p-home"); tick();
+  try{ buildPlan(); save(); }catch(e){ console.warn("plan", e); }
 }
 
 /* ============================================================
